@@ -1,109 +1,105 @@
 ---
 name: gh-canvas
-description: Arbeite an der Grasshopper-Leinwand über die GH_MCP-Brücke (Port 8080) — Bausteine platzieren, verdrahten, Fehler auslesen, RAPID prüfen, Leinwand automatisch anordnen und Panels passend dimensionieren. Nutze diesen Skill, sobald es um Grasshopper, Rhino, Robot Components, die Roboterkette oder RAPID-Ausgabe im China-Kursprojekt geht — auch bei "räum die Leinwand auf", "ordne das an", "warum ist der Baustein rot", "was kommt im RAPID raus".
+description: Work on a live Grasshopper canvas through the GH_MCP bridge (TCP port 8080) — place and wire components, read runtime errors, inspect the data that actually flows, lay out the canvas, size panels, and save versioned checkpoints. Use whenever the task involves Grasshopper, Rhino or a parametric definition that is open in the editor — including "tidy the canvas", "why is that component red", "what does it output", "wire X to Y".
 ---
 
-# Grasshopper-Leinwand über die MCP-Brücke
+# Driving a Grasshopper canvas
 
-Die Brücke ist ein selbst gebauter Fork mit Inspektionsbefehlen. Quellcode:
-`11_Robotics_Operation_and_Programming/02_Praxis/grasshopper-mcp` (Branch `china`).
-Stand und Fallen: `../MCP-BRIDGE-STATUS.md` — **vor dem Bauen lesen.**
+The bridge is a socket server inside Grasshopper. It answers one line-delimited JSON command
+per connection on `127.0.0.1:8080`. Full reference: `docs/commands.md`, protocol details in
+`docs/protocol.md`, and **read `docs/pitfalls.md` before building anything non-trivial.**
 
-## Verbindung
+## Connecting
 
-Rhino/Grasshopper muss laufen, GH_MCP-Komponente auf der Leinwand, Toggle auf True.
-Prüfen mit `nc -z 127.0.0.1 8080`. Befehle gehen als eine JSON-Zeile über TCP:
+Rhino must be running with the document open, the **Grasshopper MCP** component on the canvas
+and its toggle set to `True`. Check with `nc -z 127.0.0.1 8080`.
 
 ```python
 import json, socket
-def send(cmd, params=None, timeout=120):
+def send(command, params=None, timeout=120):
     s = socket.socket(); s.settimeout(timeout); s.connect(("localhost", 8080))
-    s.sendall((json.dumps({"type": cmd, "parameters": params or {}}) + "\n").encode())
+    s.sendall((json.dumps({"type": command, "parameters": params or {}}) + "\n").encode())
     data = b""
-    while True:
+    while not data.endswith(b"\n"):
         chunk = s.recv(8192)
         if not chunk: break
         data += chunk
-        if data.endswith(b"\n"): break
     s.close()
     return json.loads(data.decode("utf-8-sig").strip())
 ```
 
-Fertiges Hilfsskript: `grasshopper-mcp/tools/gh.py` (falls vorhanden), sonst obiges einbetten.
+`tools/gh.py` is the same thing with a command-line entry point.
 
-## Befehle
+## Commands
 
-Lesen: `get_document_info`, `get_component_info` {id}, `get_connections`, `get_errors`,
-`get_component_output` {id, limit}, `get_layout`, `search_components` {query}
+**Read** — `get_document_info`, `get_component_info` {id}, `get_component_output` {id, limit},
+`get_connections`, `get_errors`, `get_layout`, `search_components` {query}
 
-Bauen: `add_component` {type, x, y}, `connect_components` {sourceId, targetId, sourceParam,
-targetParamIndex}, `disconnect_components` {targetId, targetParam|targetParamIndex},
-`delete_component` {id}, `set_component_value` {id, value}, `set_value_list` {id, value},
-`add_variable_parameter` {id, index}, `create_group` {name, ids, color}
+**Build** — `add_component` {type, x, y}, `connect_components` {sourceId, targetId,
+sourceParam, targetParamIndex}, `disconnect_components` {targetId, targetParam},
+`delete_component` {id}, `add_variable_parameter` {id, index, side}
 
-Layout: `set_component_position` {items:[{id,x,y}]} (Batch), `set_component_size` {id, width, height}
+**Values and labels** — `set_component_value`, `set_param_value` {id, index, value},
+`set_slider` {id, min, max, value, digits, name}, `set_nickname`, `set_value_list`,
+`set_colour`, `set_script`
 
-Speichern/Laden: `save_document` {path?} (ohne Pfad = an den Ort des Dokuments),
-`load_document` {path} — lädt die Datei in den Editor.
+**Layout** — `set_component_position` {items:[{id,x,y}]}, `set_component_size`,
+`create_group` {name, ids, color}, `set_preview` {id, hidden}
 
-## Eiserne Regeln
+**Document** — `save_document` {path?}, `load_document` {path}, `clear_document`
 
-1. **Bausteine nur per GUID platzieren, nie per Name.** Die Namenssuche erwischt bevorzugt
-   OBSOLETE-Altversionen oder Parameter-Container mit identischem Namen. GUID immer erst über
-   `search_components` holen (liefert `obsolete`-Flag) und den Typnamen der Antwort prüfen.
-2. **Eingänge per `targetParamIndex` verdrahten, nicht per Name** — sicherer bei gleichnamigen
-   oder umbenannten Anschlüssen (z. B. Move: „Translation" hieß früher so, heute „Motion").
-   Indizes vorher mit `get_component_info` ablesen.
-3. **Nach dem Löschen bleibt ein Baustein kurz auffindbar.** Ein connect auf eine gelöschte ID
-   meldet Erfolg, erzeugt aber keinen wirksamen Draht. Beim Ersetzen verketteter Bausteine:
-   erst alle neuen platzieren, dann die Verdrahtung komplett neu aufbauen.
-4. **Erfolg immer an den Daten prüfen, nie an der Rückmeldung.** `get_component_output` zeigt,
-   was wirklich fließt; leere Liste = der Draht wirkt nicht. Nach jedem Bauschritt `get_errors`.
-5. **Rhino-Neustart ist nur nach Austausch der .gha nötig** (net48 entlädt keine Assemblies).
-   Normales Bauen braucht keinen. Nach einem .gha-Build: bauen, in den Libraries-Ordner kopieren,
-   den Nutzer um Neustart bitten — und mehrere .gha-Änderungen zu einem Neustart bündeln.
+## The rules that matter
 
-## Leinwand aufräumen
+1. **Place by GUID, never by name.** Name lookup returns OBSOLETE twins and parameter
+   containers with the same label — in vanilla Grasshopper too. Resolve with
+   `search_components` (it reports an `obsolete` flag) and verify the type name in the reply.
+2. **Wire targets by index, not by name.** Parameter names differ between plugin versions.
+   Read the real names and positions with `get_component_info` first. Output names are often
+   surprising (`Larger than`, not `Result`) — a wrong name connects nothing and still reports
+   success.
+3. **Judge success by the data.** `get_component_output` after every wiring step; an empty
+   list means the wire does nothing. Then `get_errors`. Never trust the return message alone.
+4. **A deleted component stays findable briefly.** Connecting to it succeeds and does nothing.
+   When replacing a chain: place all new components, then rebuild all wiring, then verify.
+5. **Wrong order means data trees.** Check branch structure with a `Tree Statistics` component
+   before suspecting your logic. `Flatten Tree` and `Simplify Tree` are the usual fixes.
+6. **Restart Rhino only after replacing the `.gha`.** Normal canvas work never needs one.
+   Batch bridge changes into a single build and restart.
+7. **Checkpoint before layout passes and chain replacements** — moving components creates no
+   undo record.
+8. **Not everything is a component.** `search_components` cannot see right-click menu items.
+   When a capability seems missing, check the context menu before building a workaround.
 
-```bash
-python3 11_Robotics_Operation_and_Programming/02_Praxis/grasshopper-mcp/tools/gh_layout.py --dry-run
-python3 11_Robotics_Operation_and_Programming/02_Praxis/grasshopper-mcp/tools/gh_layout.py
-```
-
-Spalten nach Datenfluss, Zeilen nach Schwerpunkt der Eingänge, Gruppenmitglieder bleiben
-beieinander. `--panels` passt nur die Panelgrößen an (RAPID-Panels groß, Wertepanels klein).
-Gruppen überleben das Verschieben, weil ihre Mitgliedschaft an IDs hängt, nicht an Positionen.
-
-## Versionierte Checkpoints
-
-**Vor jedem größeren Umbau einen Checkpoint setzen** — dann ist jeder Fehlgriff eine
-Kommandozeile weit vom Rückweg entfernt. Checkpoints sind normale Git-Commits der .gh-Datei.
+## Tidying up
 
 ```bash
-python3 .../grasshopper-mcp/tools/gh_checkpoint.py save "Papier verdrahtet"
-python3 .../grasshopper-mcp/tools/gh_checkpoint.py list
-python3 .../grasshopper-mcp/tools/gh_checkpoint.py restore <commit>
+python3 tools/gh_layout.py --compact      # columns by data flow, groups as bands
+python3 tools/gh_layout.py --align-only   # straighten single-consumer wires only
+python3 tools/gh_layout.py --check        # report real overlaps, move nothing
+python3 tools/gh_preview.py               # hide helper geometry in the viewport
 ```
 
-`save` speichert das laufende Dokument, committet es und schreibt Bausteinzahl sowie alle
-offenen Meldungen in die Commit-Nachricht — der Verlauf zeigt also, wann die Leinwand sauber
-war. `restore` holt die Datei zurück und lädt sie direkt in den Editor.
+Groups survive being moved — membership is by id, not position. There is no "add to group";
+delete the group and recreate it with the full member list.
 
-Wichtig: **Verschieben und Größenänderungen erzeugen keinen Rückgängig-Eintrag in
-Grasshopper.** Vor `gh_layout.py` und vor jedem Ersetzen verketteter Bausteine daher immer
-erst einen Checkpoint setzen.
+## Checkpoints
 
-## Robot Components
+```bash
+python3 tools/gh_checkpoint.py save "what changed"
+python3 tools/gh_checkpoint.py list
+python3 tools/gh_checkpoint.py restore <commit>
+```
 
-Reiter „Robot Components ABB", v3.2.1. GUIDs aus dem Quellcode auf GitHub, Tag `3.2.1` (ohne v),
-`ComponentGuid`-Property der jeweiligen .cs — oder bequemer per `search_components`.
+Saves the document, commits it, and records component count and open warnings in the message —
+so the history shows when the definition was healthy. `restore` loads the file back into the
+editor.
 
-Kette im Kursprojekt: Kurve → Divide → Ebenen → Flip Plane X → **Orient ins Work-Object-System**
-→ Robot Target → Move → Merge → **Flatten Tree** → Path Generator (Slider 0–1) und RAPID Generator.
+## Building well
 
-Zwei Stolpersteine, die im Kurs Lerninhalt sind:
-- **Divide Curve legt Punkte in Pfad {0;0}.** Ohne Flatten hinter dem Merge entstehen zwei Äste
-  und damit zwei RAPID-Module.
-- **RC liest Zielebenen als bereits im Work-Object-System liegend.** Weltkoordinaten plus Work
-  Object ergibt doppelten Versatz. Orient-Baustein (Source = Objektebene, Target = WorldXY)
-  rechnet um.
+- **Label every control** with `set_slider`/`set_nickname`. A panel reading `4` tells nobody
+  what it means.
+- **Group by data-flow stage**, numbered with two digits (`01`, `02`, … — `10` sorts before
+  `2` otherwise).
+- **Couple values that must agree** rather than exposing two inputs for one physical fact.
+- **Add cheap parametric checks** (fit, reach, collision, overlap) and let downstream steps
+  refuse to run when they fail.

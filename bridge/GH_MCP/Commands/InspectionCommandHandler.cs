@@ -10,7 +10,7 @@ using System.Threading;
 namespace GrasshopperMCP.Commands
 {
     /// <summary>
-    /// Read-only inspection commands plus targeted delete, added for the China course sessions.
+    /// Read-only inspection commands plus targeted delete, added for driving a live canvas from an assistant.
     /// </summary>
     public static class InspectionCommandHandler
     {

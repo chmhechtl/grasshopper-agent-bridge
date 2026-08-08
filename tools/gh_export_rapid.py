@@ -2,7 +2,7 @@
 """Write the RAPID program to file — one layer or all of them.
 
 Offline transfer: the .mod files go on a USB stick and from there into the
-IRC5. Every layer becomes its own module, named after the layer, so a student
+IRC5. Every layer becomes its own module, named after the layer, so an operator
 loads exactly the program for the cardboard in front of them.
 
     gh_export_rapid.py                  # the layer currently selected
