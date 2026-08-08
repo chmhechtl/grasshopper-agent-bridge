@@ -37,11 +37,11 @@ Full reference in [docs/commands.md](docs/commands.md).
 ## What is in here
 
 ```
-bridge/            the .gha source (C#, targets Rhino 7 / .NET Framework 4.8)
-docs/              install, protocol, command reference, workflow, pitfalls
-skills/gh-canvas/  an agent skill: connection, commands, and the working rules
-tools/             optional operator helpers: layout, checkpoints, preview control
-examples/robotics/ the case study this was built on (see below)
+bridge/             the .gha source (C#, targets Rhino 7 / .NET Framework 4.8)
+docs/               install, protocol, command reference, workflow, pitfalls
+skills/             three agent skills — build, diagnose, extend (see below)
+tools/              optional operator helpers: layout, checkpoints, preview control
+examples/robotics/  the case study this was built on (see below)
 ```
 
 The Python tools run on the operator's machine and are optional — the bridge speaks plain
@@ -72,7 +72,18 @@ def send(command, params=None):
 print(send("get_document_info"))
 ```
 
-4. Give your assistant [skills/gh-canvas/SKILL.md](skills/gh-canvas/SKILL.md).
+4. Give your assistant the skills.
+
+## The skills
+
+Drop them into your agent's skills folder (for Claude Code: `.claude/skills/`). Each is a
+single `SKILL.md`; they load on their own when the situation matches.
+
+| Skill | For |
+|---|---|
+| [gh-canvas](skills/gh-canvas/SKILL.md) | **Building.** Connect, place by GUID, wire, verify the data, keep the canvas readable |
+| [gh-diagnose](skills/gh-diagnose/SKILL.md) | **Something is wrong.** A read-only procedure: messages → data → wires → trees → orphans, before anything is changed |
+| [gh-bridge-dev](skills/gh-bridge-dev/SKILL.md) | **The bridge is missing a command.** Handler, registration, build, redeploy — and how to reach plugin internals by reflection |
 
 ## The rules that made it work
 
