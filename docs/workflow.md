@@ -1,7 +1,8 @@
 # Working with an assistant on a live canvas
 
 How to use this without producing a mess. The rules come from building a ~285-component
-robot programming chain this way; the reasoning matters more than the specific commands.
+production chain this way (the case study in `examples/robotics/`); the reasoning matters
+more than the specific commands.
 
 ## The loop
 
@@ -41,7 +42,7 @@ nothing forces tidiness. Three habits keep it usable:
 
 ## Prefer coupling over discipline
 
-Whenever two values must agree — a pedestal under a robot, a sheet on a table, a drawing plane
+Whenever two values must agree — a base under a machine, a sheet on a table, a working plane
 on top of material — **wire them together instead of providing two sliders**. Two independent
 inputs for one physical fact is a bug waiting for a distracted moment.
 
@@ -49,24 +50,19 @@ Every time this rule was applied, a pair of sliders disappeared and a class of e
 
 ## Let the machine check what the eye cannot
 
-Cheap, parametric checks turn "looks fine" into a verdict:
+Cheap, parametric checks turn "looks fine" into a verdict: does the result fit inside its
+bounds, does anything intersect that must not, is every commanded state actually achievable.
+Wire them into a single flag and let downstream steps — especially exports — refuse when the
+flag is false. **A file that must not be used is better never written.**
 
-- does the path fit inside the material,
-- does the robot collide with anything,
-- is every target reachable,
-- do the components overlap on the canvas.
+Two subtleties that made such checks honest in practice:
 
-Wire them into a single flag and let the export refuse when the flag is false. A file that must
-not be run is better never written.
-
-Two subtleties that made these checks honest:
-
-- A collision component that reports *containment* as a collision cannot tell "inside the
-  fence" from "sticking through it". Contain­ment needs a different test — for an axis-aligned
-  box, comparing the bounding box corners is exact and cheap.
-- Reachability cannot be judged from the achieved pose: inverse kinematics returns a
-  substitute pose within limits when a target is out of range. Measure the **commanded**
-  target against the reach instead.
+- A test that reports *containment* the same way as *intersection* cannot tell "safely inside"
+  from "sticking through the boundary". Containment needs its own test — for an axis-aligned
+  box, checking the bounding-box corners is exact and cheap.
+- Never judge feasibility from the *achieved* result when the solver substitutes a fallback
+  for impossible inputs — measure the **commanded** value against the limit instead. (Inverse
+  kinematics is the classic case: out-of-range targets come back as plausible poses.)
 
 ## Where to draw the line at scripting
 
@@ -80,7 +76,7 @@ from outside — which is an operator's convenience, never a requirement for the
 
 ## Visualise the thing being made
 
-The parts of this build that paid off most in teaching were not the clever ones — they were
-the ones that show state: the cutting plane moving through the model, the path turning red
-when it leaves the material, the robot turning red when it cannot reach. Cheap to build with
-`Custom Preview` plus a colour switch, and they replace a paragraph of explanation each.
+The parts of this build that paid off most were not the clever ones — they were the ones
+that show state: a section plane moving through the model, a path turning red when it leaves
+its bounds, a mechanism turning red when a command is infeasible. Cheap to build with
+`Custom Preview` plus a colour switch, and each one replaces a paragraph of explanation.
