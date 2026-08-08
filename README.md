@@ -15,8 +15,11 @@ produces canvases that look plausible and compute nothing, and a human has to re
 aloud to it after every step. With it, the assistant catches its own mistakes — wrong
 components, dead wires, wrong data-tree branches — before you ever look up.
 
-The bridge is a fork of [alfredatnycu/grasshopper-mcp](https://github.com/alfredatnycu/grasshopper-mcp)
-(MIT), which provided the write half. This fork adds the rest.
+[alfredatnycu/grasshopper-mcp](https://github.com/alfredatnycu/grasshopper-mcp) (MIT) built
+the server and the write half: an assistant could place and connect components. **What was
+missing was the closed loop — that is the part this fork delivers.** With it, whatever you
+build on a canvas, the assistant can verify against reality instead of against its own
+intentions.
 
 ## What the loop is made of
 
@@ -35,9 +38,9 @@ Full reference in [docs/commands.md](docs/commands.md).
 
 ```
 bridge/            the .gha source (C#, targets Rhino 7 / .NET Framework 4.8)
-tools/             general helpers: layout, checkpoints, preview control, slider playback
-skills/gh-canvas/  an agent skill: connection, commands, and the working rules
 docs/              install, protocol, command reference, workflow, pitfalls
+skills/gh-canvas/  an agent skill: connection, commands, and the working rules
+tools/             optional operator helpers: layout, checkpoints, preview control
 examples/robotics/ the case study this was built on (see below)
 ```
 
