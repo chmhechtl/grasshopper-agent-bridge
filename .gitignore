@@ -1,0 +1,6 @@
+bin/
+obj/
+*.gha
+*.user
+.DS_Store
+__pycache__/
