@@ -59,7 +59,7 @@ def find_slider(wanted):
     hits = [s for s in sliders if wanted.lower() in (s["nickname"] or "").lower()]
     if not hits:
         names = ", ".join(sorted(s["nickname"] for s in sliders if s["nickname"]))
-        raise SystemExit(f"Kein Slider passt auf '{wanted}'.\nVorhanden: {names}")
+        raise SystemExit(f"No slider matches '{wanted}'.\nAvailable: {names}")
     return hits[0]
 
 
@@ -83,11 +83,11 @@ def main():
     pingpong = "--pingpong" in sys.argv
 
     slider = find_slider(wanted)
-    print(f"Spiele '{slider['nickname']}' von {low} bis {high} "
-          f"in {steps} Schritten über {seconds:.0f} s"
-          + (" (Endlosschleife)" if loop else "")
-          + (" (hin und zurück)" if pingpong else "")
-          + "  —  Ctrl+C beendet")
+    print(f"Playing '{slider['nickname']}' from {low} to {high} "
+          f"in {steps} steps over {seconds:.0f} s"
+          + (" (looping)" if loop else "")
+          + (" (there and back)" if pingpong else "")
+          + "  —  Ctrl+C stops it")
 
     start_value = read_range(slider["id"])
     pause = seconds / max(1, steps)
@@ -115,7 +115,7 @@ def main():
         elapsed = time.time() - began
         if frames:
             print(f"{frames} Bilder in {elapsed:.1f} s  ({frames / elapsed:.1f} Bilder/s)")
-        print(f"Slider steht bei {read_range(slider['id'])} (Start war {start_value})")
+        print(f"Slider is at {read_range(slider['id'])} (started at {start_value})")
 
 
 if __name__ == "__main__":

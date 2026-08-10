@@ -69,7 +69,7 @@ namespace GH_MCP.Commands
             // 獲取組件信息
             RegisterCommand("get_component_info", ComponentCommandHandler.GetComponentInfo);
 
-            // Inspektion & gezieltes Löschen (Session 2026-08-07)
+            // Inspection and targeted deletion (session 2026-08-07)
             RegisterCommand("get_errors", InspectionCommandHandler.GetErrors);
             RegisterCommand("get_connections", InspectionCommandHandler.GetConnections);
             RegisterCommand("delete_component", InspectionCommandHandler.DeleteComponent);
@@ -87,7 +87,7 @@ namespace GH_MCP.Commands
             RegisterCommand("set_component_position", InspectionCommandHandler.SetComponentPosition);
             RegisterCommand("set_component_size", InspectionCommandHandler.SetComponentSize);
 
-            // Beschriftung und Bedienelemente (Session 2026-08-08)
+            // Labelling and controls (session 2026-08-08)
             RegisterCommand("set_nickname", InspectionCommandHandler.SetNickname);
             RegisterCommand("set_slider", InspectionCommandHandler.SetSlider);
             RegisterCommand("set_param_value", InspectionCommandHandler.SetParamValue);

@@ -56,7 +56,7 @@ def document_file():
     info = send("get_document_info")
     path = info.get("path")
     if not path:
-        raise SystemExit("Dokument hat noch keinen Pfad — einmal mit Cmd+S speichern.")
+        raise SystemExit("The document has no path yet — save it once with Cmd+S.")
     path = Path(path)
     repo = Path(git(path.parent, "rev-parse", "--show-toplevel"))
     return path, repo
@@ -69,11 +69,11 @@ def cmd_save(message):
 
     git(repo, "add", "--", str(relative))
     if not git(repo, "diff", "--cached", "--name-only"):
-        print(f"Keine Änderung gegenüber dem letzten Checkpoint ({saved['objectCount']} Bausteine).")
+        print(f"No change since the last checkpoint ({saved['objectCount']} objects).")
         return
 
     errors = send("get_errors")
-    note = f"Checkpoint: {message}\n\nBausteine: {saved['objectCount']}, Meldungen: {errors['count']}"
+    note = f"Checkpoint: {message}\n\nObjects: {saved['objectCount']}, messages: {errors['count']}"
     for component in errors["components"][:8]:
         for entry in component["messages"]:
             note += f"\n  [{component['nickname'] or component['name']}] {entry['level']}: {entry['message']}"
@@ -81,15 +81,15 @@ def cmd_save(message):
 
     git(repo, "commit", "-q", "-m", note)
     print(f"Checkpoint {git(repo, 'rev-parse', '--short', 'HEAD')}: {message}")
-    print(f"  {saved['objectCount']} Bausteine, {errors['count']} Meldungen")
+    print(f"  {saved['objectCount']} objects, {errors['count']} messages")
 
 
 def cmd_list():
     path, repo = document_file()
     relative = path.relative_to(repo)
-    log = git(repo, "log", "--format=%h  %ad  %s", "--date=format:%d.%m. %H:%M",
+    log = git(repo, "log", "--format=%h  %ad  %s", "--date=format:%Y-%m-%d %H:%M",
               "--", str(relative))
-    print(log or "Noch keine Checkpoints.")
+    print(log or "No checkpoints yet.")
 
 
 def cmd_restore(ref, keep):
@@ -97,19 +97,19 @@ def cmd_restore(ref, keep):
     relative = path.relative_to(repo)
 
     if git(repo, "status", "--porcelain", "--", str(relative)):
-        raise SystemExit("Ungespeicherte Änderungen an der Datei — erst 'save' oder verwerfen.")
+        raise SystemExit("The file has unsaved changes — run 'save' first, or discard them.")
 
     subject = git(repo, "log", "-1", "--format=%s", ref)
     git(repo, "checkout", ref, "--", str(relative))
     loaded = send("load_document", {"path": str(path)})
-    print(f"Zurück auf {ref} ({subject}) — {loaded['objectCount']} Bausteine geladen.")
+    print(f"Back on {ref} ({subject}) — {loaded['objectCount']} objects loaded.")
 
     if not keep:
         git(repo, "commit", "-q", "-m",
-            f"Zurück auf {ref}\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>")
-        print(f"Als neuer Commit festgehalten: {git(repo, 'rev-parse', '--short', 'HEAD')}")
+            f"Back on {ref}\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>")
+        print(f"Recorded as a new commit: {git(repo, 'rev-parse', '--short', 'HEAD')}")
     else:
-        print("Wiederherstellung liegt vorgemerkt (staged), noch nicht committet.")
+        print("The restore is staged, not committed.")
 
 
 def main():
@@ -118,12 +118,12 @@ def main():
     action = sys.argv[1]
 
     if action == "save":
-        cmd_save(" ".join(sys.argv[2:]) or "Zwischenstand")
+        cmd_save(" ".join(sys.argv[2:]) or "Work in progress")
     elif action == "list":
         cmd_list()
     elif action == "restore":
         if len(sys.argv) < 3:
-            raise SystemExit("restore braucht einen Commit (siehe 'list').")
+            raise SystemExit("restore needs a commit (see 'list').")
         cmd_restore(sys.argv[2], "--keep" in sys.argv)
     else:
         raise SystemExit(__doc__)

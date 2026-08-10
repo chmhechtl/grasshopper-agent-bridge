@@ -940,9 +940,9 @@ namespace GrasshopperMCP.Commands
                 {
                     throw new ArgumentException($"Component with ID {idStr} not found");
                 }
-                // Nur die echte Bruecken-KOMPONENTE schuetzen. Der fruehere
-                // Namenstest traf auch Gruppen wie "MCP bridge (keep)" — die liessen
-                // sich nie loeschen und sammelten sich bei jedem Umgruppieren an.
+                // Protect only the real bridge COMPONENT. The earlier name test
+                // also caught groups such as "MCP bridge (keep)" — those could never
+                // be deleted and piled up every time something was regrouped.
                 if (obj is GrasshopperMCPComponent)
                 {
                     throw new InvalidOperationException("Refusing to delete the MCP bridge component");

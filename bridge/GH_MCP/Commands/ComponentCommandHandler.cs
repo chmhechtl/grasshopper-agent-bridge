@@ -460,7 +460,7 @@ namespace GrasshopperMCP.Commands
                         double doubleValue;
                         if (value != null && value.Contains("<"))
                         {
-                            // Init-Code "min < wert < max" setzt Bereich UND Wert
+                            // Init code "min < value < max" sets both the range AND the value
                             slider.SetInitCode(value);
                         }
                         else if (double.TryParse(value, out doubleValue))
@@ -511,7 +511,7 @@ namespace GrasshopperMCP.Commands
                         throw new ArgumentException($"Cannot set value for component type {component.GetType().Name}");
                     }
 
-                    // Ohne Expire liefert die Komponente ihren alten Cache weiter (Panel-Staleness)
+                    // Without expiring, the component keeps serving its old cache (panel staleness)
                     if (component is IGH_ActiveObject activeObject)
                     {
                         activeObject.ExpireSolution(false);

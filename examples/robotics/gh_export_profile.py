@@ -61,8 +61,8 @@ def find_joint_component(objects):
     for obj in objects:
         if "DeconstructRobotJointPos" in obj["type"]:
             return obj["id"]
-    raise SystemExit("Kein 'Deconstruct Robot Joint Position' auf der Leinwand — "
-                     "ohne den gibt es keine Achsdaten.")
+    raise SystemExit("No 'Deconstruct Robot Joint Position' on the canvas — "
+                     "without it there is no axis data.")
 
 
 def find_tcp_component(objects, connections):
@@ -85,7 +85,7 @@ def main():
     joint_out = send("get_component_output", {"id": joint_id, "limit": 100000})["outputs"]
     axes = [numbers(o["items"]) for o in joint_out if o["name"].startswith(JOINT_PREFIX)]
     if len(axes) != 6:
-        raise SystemExit(f"Erwartet 6 Achsen, gefunden {len(axes)}.")
+        raise SystemExit(f"Expected 6 axes, found {len(axes)}.")
 
     tcp_id = find_tcp_component(objects, connections)
     tcp = []
@@ -95,13 +95,13 @@ def main():
 
     count = len(axes[0])
     if any(len(a) != count for a in axes):
-        raise SystemExit("Achsen haben unterschiedliche Längen — Kette prüfen.")
+        raise SystemExit("Axes have different lengths — check the chain.")
 
     target = Path(sys.argv[1]) if len(sys.argv) > 1 else None
     if target is None:
         document = send("get_document_info").get("path")
         if not document:
-            raise SystemExit("Dokument ist noch nicht gespeichert — Zielpfad angeben.")
+            raise SystemExit("The document has not been saved yet — give a target path.")
         target = Path(document).with_suffix("").with_name(
             Path(document).stem + "_motion_profile.csv")
 

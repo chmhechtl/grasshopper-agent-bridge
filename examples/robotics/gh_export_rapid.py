@@ -84,7 +84,7 @@ def main():
     objects = send("get_layout")["objects"]
     rapid = find(objects, type_contains="RAPIDGeneratorComponent")
     if rapid is None:
-        raise SystemExit("Kein RAPID Generator auf der Leinwand.")
+        raise SystemExit("No RAPID Generator on the canvas.")
     slider = find(objects, nickname_startswith=LAYER_SLIDER)
     safe = find(objects, nickname_startswith=SAFE_FLAG)
     fits = find(objects, nickname_startswith=FIT_FLAG)
@@ -115,8 +115,8 @@ def main():
         on_sheet = first(fits) if fits else "True"
         if (verdict != "True" or on_sheet != "True") and "--force" not in sys.argv:
             skipped.append((layer, verdict, on_sheet))
-            print(f"  Layer {layer:3}: ÜBERSPRUNGEN "
-                  f"(sicher={verdict}, passt aufs Blatt={on_sheet})")
+            print(f"  Layer {layer:3}: SKIPPED "
+                  f"(safe={verdict}, fits the sheet={on_sheet})")
             continue
 
         target = folder / f"layer_{layer:02d}.mod"
@@ -124,12 +124,12 @@ def main():
         moves = sum(1 for line in target.read_text(encoding="utf-8").splitlines()
                     if "Move" in line)
         written.append(target)
-        print(f"  Layer {layer:3}: {target.name}  ({moves} Bewegungen)")
+        print(f"  Layer {layer:3}: {target.name}  ({moves} moves)")
 
-    print(f"\n{len(written)} Datei(en) geschrieben.")
+    print(f"\n{len(written)} file(s) written.")
     if skipped:
-        print(f"{len(skipped)} Layer übersprungen — erst Zelle oder Blattformat korrigieren, "
-              f"oder bewusst mit --force erzwingen.")
+        print(f"{len(skipped)} layers skipped — fix the cell or the sheet format first, "
+              f"or force them deliberately with --force.")
         raise SystemExit(1)
 
 

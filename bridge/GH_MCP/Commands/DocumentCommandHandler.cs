@@ -191,7 +191,7 @@ namespace GrasshopperMCP.Commands
                         throw new InvalidOperationException("No active Grasshopper document");
                     }
 
-                    // Ohne Pfad: dorthin speichern, wo das Dokument herkommt (Cmd+S-Verhalten)
+                    // No path given: save where the document came from (Cmd+S behaviour)
                     string target = string.IsNullOrEmpty(path) ? doc.FilePath : path;
                     if (string.IsNullOrEmpty(target))
                     {
@@ -258,8 +258,8 @@ namespace GrasshopperMCP.Commands
                     }
 
                     // Das alte Dokument MUSS weg: Robot Components meldet sonst
-                    // "variable name already in use", weil Werkzeug- und Work-Object-Namen
-                    // über alle offenen Dokumente hinweg eindeutig sein müssen.
+                    // "variable name already in use", because tool and work-object names
+                    // must be unique across every open document.
                     var previous = Grasshopper.Instances.ActiveCanvas.Document;
 
                     io.Document.FilePath = path;

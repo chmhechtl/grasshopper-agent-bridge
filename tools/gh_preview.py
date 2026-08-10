@@ -72,10 +72,10 @@ def main():
             changed += 1
 
     if show_all:
-        print(f"Vorschau für {changed} Bausteine wieder eingeschaltet.")
+        print(f"Preview switched back on for {changed} components.")
     else:
-        print(f"{changed} Bausteine geprüft — sichtbar bleiben nur Roboter, Bahn, "
-              f"Zelle, Modell und die eingefärbten Vorschauen.")
+        print(f"{changed} components checked — only the robot, path, cell, model "
+              f"and the coloured previews stay visible.")
 
 
 if __name__ == "__main__":

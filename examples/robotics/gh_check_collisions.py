@@ -47,8 +47,8 @@ def by_nickname(objects, wanted):
     for obj in objects:
         if (obj["nickname"] or "").lower().startswith(wanted.lower()):
             return obj["id"]
-    raise SystemExit(f"Baustein '{wanted}' nicht gefunden — "
-                     "steht die Kollisionsprüfung auf der Leinwand?")
+    raise SystemExit(f"Component '{wanted}' not found — "
+                     "is the collision check on the canvas?")
 
 
 def first_value(component_id):
@@ -74,7 +74,7 @@ def main():
         counts = send("get_component_output", {"id": joints["id"], "limit": 100000})["outputs"]
         steps = max(1, len(counts[1]["items"]) - 1)
 
-    print(f"Prüfe {steps + 1} Posen …")
+    print(f"Checking {steps + 1} poses …")
     bad = []
     for i in range(steps + 1):
         value = i / steps
@@ -82,13 +82,13 @@ def main():
         if first_value(verdict) != "True":
             bad.append((i, first_value(obstacle), first_value(inside)))
             print(f"  Pose {i:4}: NICHT SICHER "
-                  f"(frei von Hindernis={bad[-1][1]}, im Zaun={bad[-1][2]})")
+                  f"(clear of obstacle={bad[-1][1]}, inside fence={bad[-1][2]})")
 
     if bad:
-        print(f"\n{len(bad)} von {steps + 1} Posen unsicher — Programm so nicht fahren.")
+        print(f"\n{len(bad)} of {steps + 1} poses unsafe — do not run this program.")
         raise SystemExit(1)
-    print(f"\nAlle {steps + 1} Posen sicher: kein Kontakt mit Tisch oder Podest, "
-          "Roboter durchgehend innerhalb des Zauns.")
+    print(f"\nAll {steps + 1} poses safe: no contact with table or pedestal, "
+          "robot inside the fence throughout.")
 
 
 if __name__ == "__main__":

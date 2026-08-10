@@ -221,21 +221,21 @@ def check_or_fix(dry_run, repair):
     layout = send("get_layout")
     objects = {o["id"]: o for o in layout["objects"]}
     if not any("left" in o for o in layout["objects"]):
-        raise SystemExit("Die .gha liefert noch keine Rahmenmaße — Rhino einmal neu starten.")
+        raise SystemExit("The .gha is not reporting frame bounds yet — restart Rhino once.")
 
     placed = {o["id"]: [o["left"], o["top"]] for o in layout["objects"]}
     hits = count_overlaps(placed, objects)
-    print(f"{len(objects)} Bausteine geprüft, {len(hits)} echte Überlappungen")
+    print(f"{len(objects)} components checked, {len(hits)} real overlaps")
     for first, second in hits[:12]:
-        print(f"  {objects[first]['type'][:28]:28} überlagert {objects[second]['type'][:28]}")
+        print(f"  {objects[first]['type'][:28]:28} overlaps {objects[second]['type'][:28]}")
     if not hits or not repair:
         return
 
     original = {node: list(pos) for node, pos in placed.items()}
     repaired = resolve_overlaps(placed, objects, pad=min(GUTTER_Y, 10))
     moved = [n for n in placed if placed[n] != original[n]]
-    print(f"{repaired} Verschiebungen, {len(moved)} Bausteine betroffen, "
-          f"{len(count_overlaps(placed, objects))} Überlappungen übrig")
+    print(f"{repaired} moves, {len(moved)} components affected, "
+          f"{len(count_overlaps(placed, objects))} overlaps left")
     if dry_run:
         return
 
@@ -244,7 +244,7 @@ def check_or_fix(dry_run, repair):
               "y": placed[n][1] + (objects[n]["y"] - objects[n]["top"])}
              for n in moved]
     result = send("set_component_position", {"items": items})
-    print(f"verschoben: {result['moved']}")
+    print(f"moved: {result['moved']}")
 
 
 def align_only(dry_run):
@@ -252,7 +252,7 @@ def align_only(dry_run):
     layout = send("get_layout")
     objects = {o["id"]: o for o in layout["objects"]}
     if not any(o.get("outputs") for o in layout["objects"]):
-        raise SystemExit("Die .gha liefert noch keine Anschlusspunkte — Rhino einmal neu starten.")
+        raise SystemExit("The .gha is not reporting connection grips yet — restart Rhino once.")
 
     wires = send("get_connections")["connections"]
     offsets = grip_offsets(objects)
@@ -296,7 +296,7 @@ def align_only(dry_run):
         if source_offset is None or target_offset is None or wire["targetId"] not in placed:
             continue
         if group_of.get(node) != group_of.get(wire["targetId"]):
-            continue  # Ausrichtung endet an der Gruppengrenze — Bänder bleiben heil
+            continue  # alignment stops at the group boundary — bands stay intact
         wanted = placed[wire["targetId"]][1] + target_offset - source_offset
         if abs(wanted - placed[node][1]) <= 0.5:
             continue
@@ -311,12 +311,12 @@ def align_only(dry_run):
 
     moved = [n for n in placed if placed[n] != original[n]]
     for label in moved_labels:
-        print(f"  ausgerichtet: {label}")
+        print(f"  aligned: {label}")
     for label in blocked_labels:
-        print(f"  blockiert:    {label}")
-    print(f"Waagerechte Drähte: {before} -> {after} von {len(wires)}")
-    print(f"{len(moved)} Bausteine verschoben, "
-          f"{len(count_overlaps(placed, objects))} Überlappungen")
+        print(f"  blocked: {label}")
+    print(f"Horizontal wires: {before} -> {after} of {len(wires)}")
+    print(f"{len(moved)} components moved, "
+          f"{len(count_overlaps(placed, objects))} overlaps")
     if dry_run or not moved:
         return
 
@@ -324,7 +324,7 @@ def align_only(dry_run):
               "x": placed[n][0] + (objects[n]["x"] - objects[n]["left"]),
               "y": placed[n][1] + (objects[n]["y"] - objects[n]["top"])}
              for n in moved]
-    print(f"verschoben: {send('set_component_position', {'items': items})['moved']}")
+    print(f"moved: {send('set_component_position', {'items': items})['moved']}")
 
 
 def main():
@@ -389,7 +389,7 @@ def main():
     for group in layout["groups"]:
         for member in group["members"]:
             group_of[member] = group["name"]
-    ungrouped = "Z · ohne Gruppe"
+    ungrouped = "Z · ungrouped"
 
     cells = {}
     for col, nodes in columns.items():
@@ -495,10 +495,10 @@ def main():
 
     width = max(placed[n][0] + objects[n]["width"] for n in placed)
     height = max(placed[n][1] + objects[n]["height"] for n in placed)
-    print(f"{len(items)} Bausteine, {len(columns)} Spalten, {len(band_y)} Bänder — "
-          f"Fläche {width:.0f} × {height:.0f}")
-    print(f"Überlappungen: {before} gefunden, {repaired} Verschiebungen, {len(remaining)} übrig")
-    print(f"Waagerechte Drähte: {straight_before} -> {straight_after} von {len(wires)}")
+    print(f"{len(items)} components, {len(columns)} columns, {len(band_y)} bands — "
+          f"area {width:.0f} × {height:.0f}")
+    print(f"Overlaps: {before} found, {repaired} moves, {len(remaining)} left")
+    print(f"Horizontal wires: {straight_before} -> {straight_after} of {len(wires)}")
     for first, second in remaining[:5]:
         print(f"  ! {objects[first]['type']} / {objects[second]['type']}")
     if dry_run:
@@ -506,10 +506,10 @@ def main():
         return
 
     result = send("set_component_position", {"items": items})
-    print(f"verschoben: {result['moved']}, nicht gefunden: {len(result['missing'])}")
+    print(f"moved: {result['moved']}, not found: {len(result['missing'])}")
 
     errors = send("get_errors")
-    print(f"Meldungen nach dem Layout: {errors['count']}")
+    print(f"Messages after layout: {errors['count']}")
 
 
 if __name__ == "__main__":

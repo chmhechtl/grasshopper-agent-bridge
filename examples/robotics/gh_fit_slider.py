@@ -44,14 +44,14 @@ def main():
 
     stats = next((o for o in objects if "TreeStatistics" in o["type"]), None)
     if stats is None:
-        raise SystemExit("Kein Tree-Statistics-Baustein gefunden — Schichtzahl unbekannt.")
+        raise SystemExit("No Tree Statistics component found — layer count unknown.")
     count = int(send("get_component_output", {"id": stats["id"], "limit": 5})["outputs"][2]["items"][0])
 
     slider = next((o for o in objects
                    if o["type"] == "GH_NumberSlider"
                    and (o["nickname"] or "").lower().startswith(SLIDER.lower())), None)
     if slider is None:
-        raise SystemExit(f"Kein Slider '{SLIDER}' gefunden.")
+        raise SystemExit(f"No slider '{SLIDER}' found.")
 
     current = send("get_component_info", {"id": slider["id"]}).get("value")
     try:
@@ -61,8 +61,8 @@ def main():
 
     send("set_slider", {"id": slider["id"], "min": 0, "max": max(1, count - 1),
                         "value": value, "digits": 0, "name": slider["nickname"]})
-    print(f"{count} Schichten — Slider '{slider['nickname']}' laeuft jetzt 0 bis {count - 1}"
-          f" (steht auf {value:.0f}).")
+    print(f"{count} layers — slider '{slider['nickname']}' now runs 0 to {count - 1}"
+          f" (set to {value:.0f}).")
 
 
 if __name__ == "__main__":
