@@ -10,6 +10,11 @@ measure    what data is flowing? what turned red? where did it land?
 correct    delete, disconnect, re-wire, lay out — and prove it worked
 ```
 
+![Building a perforated facade panel through the bridge](examples/facade-panel/demo.gif)
+
+*Left: the assistant. Right: the live canvas and viewport. Sped up; the full run took about
+nine minutes. → [examples/facade-panel/](examples/facade-panel/)*
+
 The difference sounds small and is everything. Without the measuring half, an assistant
 produces canvases that look plausible and compute nothing, and a human has to read the screen
 aloud to it after every step. With it, the assistant catches its own mistakes — wrong

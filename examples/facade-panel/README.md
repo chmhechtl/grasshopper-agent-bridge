@@ -12,6 +12,14 @@ The brief given to the agent was the outcome, not the components:
 
 Result: 28 components in five named groups, built in about nine minutes.
 
+Open [`facade-panel.gh`](facade-panel.gh) to see the finished definition. Two screen recordings
+of the actual sessions, unedited apart from being sped up:
+
+| | |
+|---|---|
+| [`build.mp4`](build.mp4) · 82 s | From an empty canvas to the verified panel |
+| [`modify.mp4`](modify.mp4) · 65 s | Recolour, rotate 90°, annotate — and the two limitations below |
+
 ## What makes it worth reading
 
 Not that it worked. That the agent knew it worked, and knew *why*, at each step.
