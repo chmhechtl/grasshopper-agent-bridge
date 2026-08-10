@@ -158,6 +158,11 @@ Working tool, not polished product: the API is stable enough to build on, the co
 carries its origins. Tested on **Rhino 7 for macOS**; the project targets .NET Framework 4.8
 and should build for Rhino 7 on Windows unchanged (unverified).
 
+The bridge, the protocol and all documentation are English. The optional Python helpers in
+`tools/` print their progress messages in German — they were written alongside a German-language
+project. Their command-line flags, their code and their comments are English, so they are usable
+as they are; the messages are a few dozen strings if you want them otherwise.
+
 ## License and attribution
 
 MIT, see [LICENSE](LICENSE) — inherited from the upstream project by Alfred Chen and kept.
