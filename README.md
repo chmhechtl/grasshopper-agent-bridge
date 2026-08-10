@@ -41,7 +41,7 @@ bridge/             the .gha source (C#, targets Rhino 7 / .NET Framework 4.8)
 docs/               install, protocol, command reference, workflow, pitfalls
 skills/             three agent skills — build, diagnose, extend (see below)
 tools/              optional operator helpers: layout, checkpoints, preview control
-examples/robotics/  the case study this was built on (see below)
+examples/           a short worked example, plus the case study this was built on
 ```
 
 The Python tools run on the operator's machine and are optional — the bridge speaks plain
@@ -121,7 +121,18 @@ Learned over one long build; the full list with evidence is in
    connect nothing. `get_component_output` shows what actually flows.
 3. **When the order is wrong, look at the data tree** before you look at your logic.
 
-## The case study
+## Examples
+
+**[examples/facade-panel/](examples/facade-panel/) — start here.** A panel with a grid of holes
+sized by an attractor point, built from an outcome-level brief in about nine minutes. Vanilla
+Grasshopper only, nothing to install. Worth reading not because it worked, but because the agent
+knew *why* it worked at each step: it measured the removed material to confirm the holes were
+real openings, verified a rotation by the resulting centroid rather than by the angle it fed in,
+and — between two sessions — correctly worked out that the sliders had been moved by hand rather
+than "fixing" the human's edits. It also turned up two genuine limitations, including one in the
+layout tool that `--check` could not see.
+
+### The case study
 
 The loop was built and hardened on a real project: an industrial-robot programming chain of
 ~285 components — model slicing, cell geometry, tool calibration, collision and reach

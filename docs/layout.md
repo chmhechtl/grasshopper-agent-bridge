@@ -79,6 +79,24 @@ it. This is the right tool after a hand edit; the full pass is for canvases the 
 leaf inputs, and only into space that is genuinely free. A cascade of shoves would be a
 re-layout in disguise, which is exactly what this mode exists to avoid.
 
+## Known limitation: groups
+
+The full pass optimises **per component**. It keeps a group's members together only as far as
+the data flow happens to keep them together, and it never looks at the group rectangle that
+Grasshopper draws around them. On a canvas with several groups the result is components that do
+not overlap and group rectangles that stack right on top of each other.
+
+`--check` will not catch this. It compares component boxes, which is exactly what the layout
+pass optimised, so it reports a clean canvas while the screen is visibly a mess. Measured on one
+real definition: 0 component overlaps, 6 group-rectangle overlaps, and 27 components sitting
+inside a foreign group's rectangle.
+
+The fix is to place **one block per group** instead of one column per stage.
+[`examples/facade-panel/block_layout.py`](../examples/facade-panel/block_layout.py) does that in
+about 80 lines and took all three counts to zero. It is not general — the block arrangement is
+written for that definition — but the idea is: treat the group as the unit you place, order
+members by data-flow depth inside it, and give each block its own gutter.
+
 ## It is only a script
 
 `gh_layout.py` is a local Python file, not part of the bridge protocol, and none of it runs
