@@ -85,6 +85,31 @@ single `SKILL.md`; they load on their own when the situation matches.
 | [gh-diagnose](skills/gh-diagnose/SKILL.md) | **Something is wrong.** A read-only procedure: messages → data → wires → trees → orphans, before anything is changed |
 | [gh-bridge-dev](skills/gh-bridge-dev/SKILL.md) | **The bridge is missing a command.** Handler, registration, build, redeploy — and how to reach plugin internals by reflection |
 
+## Layout: what a measurable canvas gets you
+
+An agent-built definition works and is unreadable — components where they happened to land,
+wires crossing everywhere, panels at their 120×60 default cutting off the output you care about.
+A canvas nobody can read is a canvas nobody can audit.
+
+An agent has no eye for this. It cannot look at the screen and see two components overlapping.
+But `get_layout` returns real bounding boxes and connection grips, `get_connections` returns the
+graph — and once the geometry is *measurable*, a readable canvas stops being a matter of taste:
+
+```bash
+python3 tools/gh_layout.py --check   # 287 components checked, 14 real overlaps
+python3 tools/gh_layout.py           # columns by data flow, rows by barycenter,
+                                     # groups in bands, wires straightened, one batched write
+```
+
+Layering by longest path, rows ordered to keep wires short, panels sized by what they hold,
+single-consumer wires nudged dead horizontal, overlaps repaired against real bounds. `--check`
+and `--fix-overlaps` are surgical: they touch only what genuinely collides and leave everything
+a human placed alone. Full walkthrough in [docs/layout.md](docs/layout.md).
+
+**The bridge contains no layout engine.** It exposes measurable geometry, and 500 lines of
+plain Python do the rest — in any language you like. That generalises: whatever else you want an
+agent to reason about on a canvas is the same shape of problem.
+
 ## The rules that made it work
 
 Learned over one long build; the full list with evidence is in

@@ -12,5 +12,8 @@ not run against yours; they are here because the **patterns** transfer to any do
 | `gh_play.py` | Step a slider continuously — built for live demonstrations of that project |
 | `gh_fit_slider.py` | Clamp a slider's range to the layer count of that document |
 
-Common to all three: components are found **by type or nickname, not by stored id**, so the
+Common to all five: components are found **by type or nickname, not by stored id**, so the
 canvas can be rearranged freely without breaking the tooling.
+
+Nothing from the project itself is here — no models, no definitions, no output, no course
+material. Five scripts and this file, about 550 lines of Python.
