@@ -16,10 +16,10 @@
   
   <PropertyGroup>
     <!-- Specifies information for Assembly and Yak -->
-    <Version>1.0</Version>
-    <Title>GH_MCP</Title>
-    <Company>GH_MCP Authors</Company>
-    <Description>Description of GH_MCP</Description>
+    <Version>0.1.0</Version>
+    <Title>Grasshopper Agent Bridge</Title>
+    <Company>grasshopper-agent-bridge contributors</Company>
+    <Description>A closed act-measure-correct loop between an AI assistant and a live Grasshopper document. Fork of alfredatnycu/grasshopper-mcp (MIT).</Description>
   </PropertyGroup>
   
   <ItemGroup>

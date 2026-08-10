@@ -1,17 +1,21 @@
 # Installing the bridge
 
-You build one file (`GH_MCP.gha`), drop it in Grasshopper's Libraries folder, and place a
-component on the canvas. There is no installer and nothing to configure.
+One file (`GH_MCP.gha`) goes into Grasshopper's Libraries folder, then you place a component on
+the canvas. There is no installer and nothing to configure.
 
-## Requirements
+**Requirements: Rhino 7 with Grasshopper.** That is all the bridge needs. Python 3 is optional
+and only for the helper scripts in `tools/`.
 
-- **Rhino 7** with Grasshopper. Developed on macOS; the project targets .NET Framework 4.8
-  and should build for Rhino 7 on Windows unchanged (unverified).
-- **.NET SDK 8** to build. It does not need to be installed system-wide — a local copy in
-  `~/.dotnet` is enough.
-- Python 3 **only** if you want the helper scripts in `tools/`. The bridge itself needs none.
+## Option A: download the build
 
-## Build
+Take `GH_MCP.gha` from the [latest release](../../releases/latest) and skip to **Install** below.
+Built on macOS against .NET Framework 4.8; it should load in Rhino 7 on Windows as well, but
+that is untested.
+
+## Option B: build it yourself
+
+Needs the **.NET SDK 8**. It does not have to be installed system-wide — a local copy in
+`~/.dotnet` is enough.
 
 ```bash
 cd bridge
@@ -29,7 +33,7 @@ Rhino installation. On macOS they live in
 
 ## Install
 
-Copy the built file into Grasshopper's Libraries folder:
+Copy `GH_MCP.gha` into Grasshopper's Libraries folder:
 
 **macOS**
 ```bash
@@ -42,11 +46,18 @@ cp bridge/GH_MCP/bin/Release/net48/GH_MCP.gha \
 %APPDATA%\Grasshopper\Libraries\
 ```
 
-macOS may quarantine a downloaded file. If Grasshopper ignores it without a word:
+macOS quarantines downloaded files, and Grasshopper then ignores them without a word. After
+downloading the release, clear it:
 
 ```bash
 xattr -d com.apple.quarantine <path>/GH_MCP.gha
 ```
+
+On Windows the equivalent is right-click → Properties → **Unblock**.
+
+The release archive also contains `Newtonsoft.Json.dll`. Copy it into the same folder **only if**
+Grasshopper reports that assembly as missing — Rhino ships its own copy, and adding a second one
+where it is not needed can collide with other plugins.
 
 ## Run
 
