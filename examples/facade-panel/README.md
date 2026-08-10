@@ -12,13 +12,18 @@ The brief given to the agent was the outcome, not the components:
 
 Result: 28 components in five named groups, built in about nine minutes.
 
-Open [`facade-panel.gh`](facade-panel.gh) to see the finished definition. Two screen recordings
-of the actual sessions, unedited apart from being sped up:
+Open [`facade-panel.gh`](facade-panel.gh) to see the finished definition.
 
-| | |
-|---|---|
-| [`build.mp4`](build.mp4) · 82 s | From an empty canvas to the verified panel |
-| [`modify.mp4`](modify.mp4) · 65 s | Recolour, rotate 90°, annotate — and the two limitations below |
+![The three sessions](session.gif)
+
+All three sessions, unedited apart from the speed: an empty canvas to the verified panel, then
+recolouring and rotating it, then finding and fixing the layout problem described below. About
+twenty minutes of real time, sped up 6× to 25×.
+
+**Why the beginning is so slow.** That first stretch is a cold start — reading the skill, reading
+the repository docs, working out what is on the canvas before touching it. It is paid once. The
+second and third sessions start placing components within seconds, which is why they run at a
+lower speed-up here and still cover more ground.
 
 ## What makes it worth reading
 

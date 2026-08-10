@@ -10,10 +10,13 @@ measure    what data is flowing? what turned red? where did it land?
 correct    delete, disconnect, re-wire, lay out — and prove it worked
 ```
 
-![Building a perforated facade panel through the bridge](examples/facade-panel/demo.gif)
+![Building, modifying and correcting a perforated facade panel through the bridge](examples/facade-panel/session.gif)
 
-*Left: the assistant. Right: the live canvas and viewport. Sped up; the full run took about
-nine minutes. → [examples/facade-panel/](examples/facade-panel/)*
+*Left: the assistant. Right: the live canvas and the Rhino viewport. Three real sessions —
+build, modify, self-correct — sped up 6× to 25× from about twenty minutes. The long quiet stretch
+at the start is a **cold start**: the assistant is reading its skill and the repository docs
+before it touches an empty canvas. That cost is paid once; later sessions on the same definition
+begin producing components within seconds. → [examples/facade-panel/](examples/facade-panel/)*
 
 The difference sounds small and is everything. Without the measuring half, an assistant
 produces canvases that look plausible and compute nothing, and a human has to read the screen
