@@ -10,7 +10,7 @@ No parameters. → `name`, `path`, `componentCount`, `components[]` with `id`, `
 
 ### `get_component_info`
 `id` — → `type`, `name`, `description`, `inputs[]`, `outputs[]` (each with `name`, `nickname`,
-`dataType`), and for panels and sliders the current `value`.
+`dataType`), and for panels, sliders and boolean toggles the current `value`.
 
 **Read the input list before wiring.** Names change between plugin versions; indices are what
 you should wire against.
@@ -24,7 +24,7 @@ The single most useful command in the set. A component that reports success but 
 empty list is not wired the way you think.
 
 ### `get_connections`
-No parameters. → every wire as `sourceId`, `sourceName`, `sourceParam`, `targetId`,
+Optional `id` — only the wires into or out of that object. → every wire as `sourceId`, `sourceName`, `sourceParam`, `targetId`,
 `targetName`, `targetParam`. Sources are resolved to the owning component, not the parameter.
 
 ### `get_errors`
@@ -35,8 +35,12 @@ Run it after every build step. Note that messages **persist until the component 
 so a stale warning can outlive its cause — check the data before believing it.
 
 ### `get_layout`
-No parameters. → per object: `x`, `y` (pivot), `left`, `top`, `width`, `height` (the real box),
+Optional `ids[]` (only these objects; the MCP server then also drops the groups none of them
+belongs to) and `grips: false` (omit `inputs`/`outputs`). → per object: `x`, `y` (pivot), `left`, `top`, `width`, `height` (the real box),
 `inputs[]`/`outputs[]` with wire attachment points, plus all `groups` with their members.
+
+On a large document the full reply runs to tens of thousands of characters, most of it wire
+grips. An assistant should ask for `ids` and `grips: false` unless it is doing layout maths.
 
 **Pivot is not the box corner** and sits differently per component type. For overlap or
 alignment maths use `left`/`top`; convert back to pivot only when writing positions.
@@ -58,11 +62,14 @@ twin or a parameter container of the same name.
 
 ### `connect_components`
 `sourceId`, `targetId`, and either `sourceParam`/`targetParam` (names) or
-`sourceParamIndex`/`targetParamIndex`.
+`sourceParamIndex`/`targetParamIndex`. Optional `append: true`.
+
+**A new wire replaces the wires already on that input** — like dragging one on the canvas.
+`append: true` is the shift-drag: existing sources stay.
 
 Prefer indices for targets. Output names are often not what you expect — a comparison
-component's output is `Larger than`, not `Result` — and a wrong name silently connects
-nothing while still reporting success.
+component's output is `Larger than`, not `Result`. Since 0.2.1 a name that does not exist is
+reported as an error; before, the reply said `success: true` with the error buried in `data`.
 
 ### `disconnect_components`
 `targetId`, plus `targetParam` (name) or `targetParamIndex`, optionally `sourceId` to remove

@@ -173,6 +173,9 @@ namespace GH_MCP.Commands
                 try
                 {
                     var result = handler(command);
+                    // A handler that builds its own Response decides success itself. Wrapping it
+                    // again reported its failures as success with the error buried in data.
+                    if (result is Response own) { return own; }
                     return Response.Ok(result);
                 }
                 catch (Exception ex)

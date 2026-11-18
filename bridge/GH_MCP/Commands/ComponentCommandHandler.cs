@@ -656,6 +656,11 @@ namespace GrasshopperMCP.Commands
                         componentInfo["maximum"] = (double)slider.Slider.Maximum;
                     }
                     
+                    if (component is GH_BooleanToggle toggle)
+                    {
+                        componentInfo["value"] = toggle.Value;
+                    }
+
                     result = componentInfo;
                 }
                 catch (Exception ex)

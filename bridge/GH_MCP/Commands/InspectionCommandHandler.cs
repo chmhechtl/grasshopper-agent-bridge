@@ -104,6 +104,9 @@ namespace GrasshopperMCP.Commands
         /// </summary>
         public static object GetConnections(Command command)
         {
+            // Optional 'id': only the wires into or out of that object.
+            string only = command.GetParameter<string>("id");
+
             return RunOnUiThread(doc =>
             {
                 var connections = new List<object>();
@@ -113,6 +116,12 @@ namespace GrasshopperMCP.Commands
                     foreach (var source in input.Sources)
                     {
                         var sourceOwner = source.Attributes?.GetTopLevel?.DocObject;
+                        if (!string.IsNullOrEmpty(only)
+                            && !string.Equals(only, (sourceOwner ?? (IGH_DocumentObject)source).InstanceGuid.ToString(), StringComparison.OrdinalIgnoreCase)
+                            && !string.Equals(only, targetOwner.InstanceGuid.ToString(), StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
                         connections.Add(new
                         {
                             sourceId = (sourceOwner ?? (IGH_DocumentObject)source).InstanceGuid.ToString(),
@@ -698,6 +707,11 @@ namespace GrasshopperMCP.Commands
         /// </summary>
         public static object GetLayout(Command command)
         {
+            // Optional 'ids': only these objects (groups are always listed).
+            // Optional 'grips': false drops the wire attachment points — most of the payload.
+            var wanted = new HashSet<string>(IdList(command), StringComparer.OrdinalIgnoreCase);
+            bool grips = !command.Parameters.ContainsKey("grips") || command.GetParameter<bool>("grips");
+
             return RunOnUiThread(doc =>
             {
                 var groups = new List<object>();
@@ -713,6 +727,11 @@ namespace GrasshopperMCP.Commands
                             name = group.NickName,
                             members = group.ObjectIDs.Select(g => g.ToString()).ToList()
                         });
+                        continue;
+                    }
+
+                    if (wanted.Count > 0 && !wanted.Contains(obj.InstanceGuid.ToString()))
+                    {
                         continue;
                     }
 
@@ -737,8 +756,8 @@ namespace GrasshopperMCP.Commands
                         height = bounds.Height,
                         // Wire attachment points, so a layout pass can make a
                         // connection perfectly horizontal instead of guessing.
-                        inputs = Grips(obj, wantInput: true),
-                        outputs = Grips(obj, wantInput: false)
+                        inputs = grips ? Grips(obj, wantInput: true) : null,
+                        outputs = grips ? Grips(obj, wantInput: false) : null
                     });
                 }
 

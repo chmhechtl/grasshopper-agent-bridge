@@ -179,7 +179,9 @@ namespace GH_MCP.Commands
                     }
 
                     // 移除現有連接（如果需要）
-                    if (targetParameter.SourceCount > 0)
+                    // Like dragging a wire: the new one replaces what is there. append=true is
+                    // the shift-drag — keep the existing sources and add this one.
+                    if (targetParameter.SourceCount > 0 && !command.GetParameter<bool>("append"))
                     {
                         targetParameter.RemoveAllSources();
                     }

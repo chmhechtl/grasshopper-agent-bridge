@@ -5,6 +5,8 @@
 2. A call travels MCP → socket → fake bridge and back, and a bridge error surfaces.
 
     python3 test_server.py
+
+With Rhino running, test_live.py exercises every tool against the real bridge.
 """
 import asyncio
 import json

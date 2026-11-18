@@ -4,13 +4,11 @@ Every entry here cost real debugging time. They are ordered by how much.
 
 ## Success messages lie
 
-`connect_components` returns `success: true` in at least three situations where no working
-wire exists:
-
-- the source component was deleted moments ago (it stays findable briefly),
-- the named output does not exist (`Result` instead of `Larger than`),
-- the parameter name was rewritten by a fuzzy table (fixed in this fork, but the class of
-  problem remains).
+`connect_components` can return `success: true` where no working wire exists: the source
+component was deleted moments ago and stays findable briefly. Two more cases are fixed — a
+parameter name that does not exist is an error since 0.2.1 (the reply used to wrap the failure
+in a success), and names are no longer rewritten by a fuzzy table — but the class of problem
+remains.
 
 **Check `get_component_output` after wiring.** An empty list means the wire does nothing. This
 one rule would have saved more time than all the others combined.
