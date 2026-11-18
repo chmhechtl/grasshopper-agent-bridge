@@ -393,7 +393,7 @@ def main():
         if not dry_run:
             send("set_component_size", {"id": obj["id"], "width": width, "height": height})
         resized += 1
-    print(f"Panels {'geplant' if dry_run else 'angepasst'}: {resized}")
+    print(f"Panels {'to resize' if dry_run else 'resized'}: {resized}")
     if panels_only:
         return
 
