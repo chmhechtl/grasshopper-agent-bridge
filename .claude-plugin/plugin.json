@@ -1,6 +1,6 @@
 {
   "name": "grasshopper-agent-bridge",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Drive a live Grasshopper canvas: place, wire, measure and correct components through an MCP server, with skills for building, diagnosing and onboarding.",
   "author": { "name": "grasshopper-agent-bridge contributors" },
   "homepage": "https://github.com/chmhechtl/grasshopper-agent-bridge",

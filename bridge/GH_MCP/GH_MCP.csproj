@@ -16,7 +16,7 @@
   
   <PropertyGroup>
     <!-- Specifies information for Assembly and Yak -->
-    <Version>0.2.1</Version>
+    <Version>0.3.0</Version>
     <Title>Grasshopper Agent Bridge</Title>
     <Company>grasshopper-agent-bridge contributors</Company>
     <Description>A closed act-measure-correct loop between an AI assistant and a live Grasshopper document. Fork of alfredatnycu/grasshopper-mcp (MIT).</Description>

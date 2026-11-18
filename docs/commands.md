@@ -1,6 +1,6 @@
 # Command reference
 
-37 commands. Parameters are the keys inside `parameters`. The MCP server
+41 commands. Parameters are the keys inside `parameters`. The MCP server
 (`server/gh_mcp_server.py`) exposes each one as a tool of the same name with the same keys.
 
 ## Reading
@@ -35,8 +35,7 @@ Run it after every build step. Note that messages **persist until the component 
 so a stale warning can outlive its cause — check the data before believing it.
 
 ### `get_layout`
-Optional `ids[]` (only these objects; the MCP server then also drops the groups none of them
-belongs to) and `grips: false` (omit `inputs`/`outputs`). → per object: `x`, `y` (pivot), `left`, `top`, `width`, `height` (the real box),
+Optional `ids[]` (only these objects and the groups they belong to) and `grips: false` (omit `inputs`/`outputs`). → per object: `x`, `y` (pivot), `left`, `top`, `width`, `height` (the real box),
 `inputs[]`/`outputs[]` with wire attachment points, plus all `groups` with their members.
 
 On a large document the full reply runs to tens of thousands of characters, most of it wire
@@ -44,6 +43,27 @@ grips. An assistant should ask for `ids` and `grips: false` unless it is doing l
 
 **Pivot is not the box corner** and sits differently per component type. For overlap or
 alignment maths use `left`/`top`; convert back to pivot only when writing positions.
+
+### `describe_document`
+Optional `clusterId`. → `scope`, `objectCount`, `objects[]` — everything needed to understand or
+rebuild a definition. Per object: `id`, `componentGuid` (pass it to `add_component`), `type`,
+`name`, `nickname`, `x`, `y`, `enabled`, `isCluster`, `value` (panel text, slider
+`min < value < max`, toggle, value list, script source, expression, scribble text), `members`
+for groups, and `inputs[]` / `outputs[]`. Per parameter: `mapping` (`None` / `Flatten` /
+`Graft`), `reverse`, `simplify`, `expression`, `persistent[]` (values typed or internalised
+into it, first 20 of `persistentCount`) and `sources[]` with the owning object's `id` and
+`paramIndex`.
+
+With `clusterId` the reply describes the **inside** of that cluster; nested clusters are found
+by their own id. A password-protected cluster is refused — the bridge does not go around the
+lock.
+
+The reply is large (about 160,000 characters for 190 objects). Write it to a file and query
+that, rather than reading it whole.
+
+### `get_documents`
+No parameters. → every document open in the editor: `index`, `name`, `path`, `objectCount`,
+`modified`, `active`.
 
 ### `search_components`
 `query` — searches Grasshopper's own registry. → `guid`, `name`, `category`, `subCategory`,
@@ -177,6 +197,16 @@ is created when missing. → `count`, `objects[]` (Rhino object ids).
 Baking twice gives two copies; the bridge does not track what it baked before.
 
 ## Document
+
+### `new_document`
+No parameters. Opens an empty document next to the ones already open and makes it active.
+Nothing is closed, and the listener keeps running — the new document needs no bridge component.
+
+### `activate_document`
+`name` or `index` — switches the active document. All other commands act on the active one.
+
+**Prefer `name`.** The order of `get_documents` changes when the active document changes, so an
+index is only good until the next switch.
 
 ### `save_document`
 optional `path` — without one, saves where the document came from.

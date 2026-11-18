@@ -34,13 +34,13 @@ own work. It is general-purpose — any definition, any plugin, nothing domain-s
 
 | Purpose | Commands |
 |---|---|
-| **See** what is there | `get_document_info`, `get_component_info`, `get_connections`, `get_layout`, `search_components` |
+| **See** what is there | `get_document_info`, `get_component_info`, `get_connections`, `get_layout`, `search_components`, `describe_document` |
 | **Measure** whether it works | `get_component_output` (the data itself, with tree branches), `get_errors`, `recompute` |
 | **Build** | `add_component`, `connect_components`, `add_variable_parameter` |
 | **Correct** | `disconnect_components`, `delete_component`, `set_enabled` |
 | **Set values** | `set_component_value` (panel, slider, toggle), `set_slider`, `set_param_value`, `set_value_list`, `set_colour`, `set_script` |
 | **Keep it readable** | `set_nickname`, `create_group`, `add_to_group`, `remove_from_group`, `set_component_position`, `set_component_size`, `set_wire_display`, `set_preview` |
-| **Rhino and files** | `bake_component`, `save_document`, `load_document`, `clear_document` |
+| **Rhino and files** | `bake_component`, `save_document`, `load_document`, `clear_document`, `new_document`, `get_documents`, `activate_document` |
 
 Give one sentence per group on why it matters, and name the single most important command:
 `get_component_output` — success is judged by the data, never by the reply.
@@ -51,6 +51,9 @@ Give one sentence per group on why it matters, and name the single most importan
   and verify each step against the real data.
 - Diagnose an existing definition: why is this red, why is the list empty, where does the tree
   go wrong — read-only, before anything is changed.
+- Understand a definition you did not build: `describe_document` returns every object with its
+  values, data mappings and sources, clusters included (unless they are password protected).
+- Rebuild or refactor in a second document while the original stays open and untouched.
 - Modify and extend someone else's canvas without breaking it, then prove it still computes.
 - Tidy a canvas: `tools/gh_layout.py` lays it out from measured geometry (columns by data flow,
   groups in bands, no overlaps).

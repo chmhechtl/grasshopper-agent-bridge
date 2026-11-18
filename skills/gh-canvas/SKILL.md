@@ -22,7 +22,8 @@ call and the socket payload alike.
 ## Commands
 
 **Read** — `get_document_info`, `get_component_info` {id}, `get_component_output` {id, limit},
-`get_connections` {id?}, `get_errors`, `get_layout` {ids?, grips?}, `search_components` {query}
+`get_connections` {id?}, `get_errors`, `get_layout` {ids?, grips?}, `search_components` {query},
+`describe_document` {clusterId?} — a whole definition in one call; large, save it to a file
 
 On a large document `get_layout` and `get_connections` return tens of thousands of characters.
 Ask for what you need: `get_layout` {ids, grips: false}, `get_connections` {id}.
@@ -42,7 +43,8 @@ targetParamIndex, sourceId?}, `delete_component` {id}, `add_variable_parameter` 
 
 **Solution and Rhino** — `recompute` {id?|ids?}, `bake_component` {id, layer?}
 
-**Document** — `save_document` {path?}, `load_document` {path}, `clear_document`
+**Document** — `save_document` {path?}, `load_document` {path}, `clear_document`,
+`new_document`, `get_documents`, `activate_document` {name}
 
 ## The rules that matter
 

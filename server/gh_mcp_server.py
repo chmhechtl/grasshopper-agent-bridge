@@ -50,6 +50,12 @@ TOOLS = {
     "search_components": (
         "Search Grasshopper's component registry. Returns guid, name, category, obsolete. "
         "Always resolve the GUID here before add_component.", {"query": S}, ["query"]),
+    "describe_document": (
+        "Everything needed to understand or rebuild a definition: per object its componentGuid, value, "
+        "and per parameter the mapping (flatten/graft), expression, internal values and sources. "
+        "With clusterId, the inside of that cluster. Large — save it to a file rather than reading it whole.",
+        {"clusterId": S}, []),
+    "get_documents": ("All documents open in the Grasshopper editor, with index, name, path and which is active.", {}, []),
     # --- building
     "add_component": (
         "Place a component. Pass a GUID from search_components as 'type'; name lookup is fuzzy "
@@ -104,6 +110,9 @@ TOOLS = {
     "bake_component": ("Bake an object's geometry into the Rhino document, optionally onto a named layer.",
                        {**ID, "layer": S}, ["id"]),
     # --- document
+    "new_document": ("Open an empty document next to the ones already open and make it active. Closes nothing.", {}, []),
+    "activate_document": ("Switch the active document, by index from get_documents or by name.",
+                          {"index": I, "name": S}, []),
     "save_document": ("Save the document; without a path, where it came from.", {"path": S}, []),
     "load_document": ("Open a .gh file and close the previous document.", {"path": S}, ["path"]),
     "clear_document": ("Remove everything except the bridge component, toggles and panels.", {}, []),
@@ -147,11 +156,6 @@ async def call_tool(name, arguments):
     if name not in TOOLS:
         raise ValueError(f"Unknown tool {name}")
     data = await asyncio.to_thread(send, name, arguments or {})
-    if name == "get_layout" and (arguments or {}).get("ids"):
-        # ponytail: the .gha lists every group even for a filtered request, which is most of
-        # the reply. Trimmed here; move into GetLayout at the next bridge rebuild.
-        wanted = set(arguments["ids"])
-        data["groups"] = [g for g in data["groups"] if wanted & set(g["members"])]
     return [types.TextContent(type="text", text=json.dumps(data, ensure_ascii=False))]
 
 

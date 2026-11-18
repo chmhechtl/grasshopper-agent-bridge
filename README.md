@@ -56,17 +56,17 @@ every command and what the bridge makes possible, and offers a first live demo.
 
 ## What the assistant can do
 
-32 tools, one per bridge command, with the same names and arguments.
+36 tools, one per bridge command, with the same names and arguments.
 
 | | Tools | Why it matters |
 |---|---|---|
-| **Observe** | `get_document_info`, `get_component_info`, `get_connections`, `get_layout`, `search_components` | The assistant sees what is really on the canvas: components, wiring, real bounding boxes |
+| **Observe** | `get_document_info`, `get_component_info`, `get_connections`, `get_layout`, `search_components`, `describe_document` | The assistant sees what is really on the canvas: components, wiring, real bounding boxes — and, in one call, a whole definition including the inside of its clusters |
 | **Measure** | `get_component_output`, `get_errors`, `recompute` | Runtime warnings and the **data itself**, with its tree structure — the only honest success check |
 | **Build** | `add_component`, `connect_components`, `add_variable_parameter` | Place by GUID, wire by index, reach parameters a plugin hides in its right-click menu |
 | **Correct** | `disconnect_components`, `delete_component`, `set_enabled` | A mistake can be undone instead of buried under a workaround |
 | **Set values** | `set_component_value`, `set_slider`, `set_param_value`, `set_value_list`, `set_colour`, `set_script` | Panels, sliders, toggles, unwired inputs, list selections, embedded scripts |
 | **Keep it legible** | `set_nickname`, `create_group`, `add_to_group`, `remove_from_group`, `set_component_position`, `set_component_size`, `set_wire_display`, `set_preview` | The canvas stays readable for the humans who inherit it |
-| **Hand over** | `bake_component`, `save_document`, `load_document`, `clear_document` | Results into Rhino; versioned checkpoints, so any experiment is one command from rollback |
+| **Hand over** | `bake_component`, `save_document`, `load_document`, `clear_document`, `new_document`, `get_documents`, `activate_document` | Results into Rhino; versioned checkpoints; several documents side by side, so a rebuild never touches the original |
 
 Every parameter and every trap: [docs/commands.md](docs/commands.md).
 
@@ -137,7 +137,7 @@ Grasshopper  ←  GH_MCP.gha  ←  JSON over a local socket  ←  MCP server  �
 ```
 
 ```
-bridge/      the .gha source (C#, Rhino 7 / .NET Framework 4.8) — 37 commands on 127.0.0.1:8080
+bridge/      the .gha source (C#, Rhino 7 / .NET Framework 4.8) — 41 commands on 127.0.0.1:8080
 server/      the MCP server (one Python file) and its two self-checks
 skills/      the four agent skills
 tools/       optional operator helpers: layout, checkpoints, preview control

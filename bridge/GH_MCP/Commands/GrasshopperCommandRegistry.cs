@@ -79,6 +79,10 @@ namespace GH_MCP.Commands
             RegisterCommand("add_to_group", InspectionCommandHandler.AddToGroup);
             RegisterCommand("remove_from_group", InspectionCommandHandler.RemoveFromGroup);
             RegisterCommand("set_wire_display", InspectionCommandHandler.SetWireDisplay);
+            RegisterCommand("describe_document", StructureCommandHandler.DescribeDocument);
+            RegisterCommand("get_documents", StructureCommandHandler.GetDocuments);
+            RegisterCommand("new_document", StructureCommandHandler.NewDocument);
+            RegisterCommand("activate_document", StructureCommandHandler.ActivateDocument);
             RegisterCommand("recompute", InspectionCommandHandler.Recompute);
             RegisterCommand("set_enabled", InspectionCommandHandler.SetEnabled);
             RegisterCommand("bake_component", InspectionCommandHandler.BakeComponent);

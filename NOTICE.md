@@ -27,7 +27,8 @@ Changed in this fork:
   `set_component_position`, `set_component_size`, `set_nickname`, `set_slider`,
   `set_param_value`, `set_value_list`, `set_preview`, `set_colour`, `set_script`,
   `add_variable_parameter`, `add_to_group`, `remove_from_group`, `set_wire_display`,
-  `set_enabled`, `recompute`, `bake_component`.
+  `set_enabled`, `recompute`, `bake_component`, `describe_document`, `get_documents`,
+  `new_document`, `activate_document`.
 - Added an MCP server (`server/gh_mcp_server.py`) that replaces the upstream Python bridge and
   exposes every document command as a tool.
 

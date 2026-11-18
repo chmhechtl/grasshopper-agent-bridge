@@ -707,7 +707,7 @@ namespace GrasshopperMCP.Commands
         /// </summary>
         public static object GetLayout(Command command)
         {
-            // Optional 'ids': only these objects (groups are always listed).
+            // Optional 'ids': only these objects and the groups they belong to.
             // Optional 'grips': false drops the wire attachment points — most of the payload.
             var wanted = new HashSet<string>(IdList(command), StringComparer.OrdinalIgnoreCase);
             bool grips = !command.Parameters.ContainsKey("grips") || command.GetParameter<bool>("grips");
@@ -721,6 +721,11 @@ namespace GrasshopperMCP.Commands
                 {
                     if (obj is Grasshopper.Kernel.Special.GH_Group group)
                     {
+                        // A filtered request only wants the groups its objects belong to.
+                        if (wanted.Count > 0 && !group.ObjectIDs.Any(g => wanted.Contains(g.ToString())))
+                        {
+                            continue;
+                        }
                         groups.Add(new
                         {
                             id = group.InstanceGuid.ToString(),

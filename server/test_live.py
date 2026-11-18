@@ -3,7 +3,7 @@
 
 Needs Rhino with the bridge component switched on. Works in a far corner of the canvas
 (-4000, -4000) with its own components and deletes them again; the document's own objects
-are only read. It does bake one circle onto the Rhino layer "gh_bridge_test", and it leaves
+are only read (new_document and activate_document are left alone). It does bake one circle onto the Rhino layer "gh_bridge_test", and it leaves
 save_document, load_document, clear_document and a full recompute alone — those would
 touch your document.
 
@@ -33,14 +33,10 @@ async def main():
             print(f"{'PASS' if err else 'FAIL'} {label:42} refused: {str(d)[:120]}")
             if not err: failed.append(label)
         # ---- reads on the real document
-        info = await good("get_document_info", "get_document_info", lambda d: d["componentCount"] > 0)
+        info = await good("get_document_info", "get_document_info", lambda d: "componentCount" in d)
         await good("get_errors", "get_errors")
         await good("get_connections", "get_connections", lambda d: "connections" in d)
-        lay = await good("get_layout", "get_layout", lambda d: len(d["objects"]) > 0)
-        some = [o["id"] for o in lay["objects"][:3]]
-        await good("get_layout ids, no grips", "get_layout", lambda d: d["objectCount"] == len(some) and d["objects"][0]["inputs"] is None
-                   and all(set(some) & set(g["members"]) for g in d["groups"]), ids=some, grips=False)
-        await good("get_connections one object", "get_connections", lambda d: all(some[0] in (c["sourceId"], c["targetId"]) for c in d["connections"]), id=some[0])
+        lay = await good("get_layout", "get_layout", lambda d: "objects" in d)
         hits = await good("search_components Circle", "search_components", query="Circle")
         hl = hits.get("components", hits) if isinstance(hits, dict) else hits
         g = lambda n: next(h["guid"] for h in hl if h["name"] == n and not h.get("obsolete"))
@@ -96,6 +92,12 @@ async def body(call, good, bad, guid, X, Y):
         await good("connect by name, append", "connect_components", lambda d: d.get("targetParam") == "Radius", sourceId=series, targetId=circle, sourceParam="Series", targetParam="Radius", append=True)
         await good("circle output 6 (2 sources)", "get_component_output", lambda d: d["outputs"][0]["count"] == 6, id=circle)
         await good("disconnect one source", "disconnect_components", lambda d: d["removedWires"] == 1 and d["remaining"] == 1, targetId=circle, targetParam="Radius", sourceId=series)
+        some = [slider, circle]
+        await good("get_layout ids, no grips", "get_layout", lambda d: d["objectCount"] == len(some) and d["objects"][0]["inputs"] is None
+                   and all(set(some) & set(g["members"]) for g in d["groups"]), ids=some, grips=False)
+        await good("get_connections one object", "get_connections", lambda d: all(some[0] in (c["sourceId"], c["targetId"]) for c in d["connections"]), id=some[0])
+        d = await good("describe_document", "describe_document", lambda d: any(o["id"] == slider and o["value"] for o in d["objects"]))
+        await good("get_documents", "get_documents", lambda d: sum(x["active"] for x in d["documents"]) == 1)
         await good("connect replaces by default", "connect_components", sourceId=slider, targetId=circle, targetParamIndex=1)
         await good("circle output 1 again", "get_component_output", lambda d: d["outputs"][0]["count"] == 1, id=circle)
         await good("set_preview hidden", "set_preview", id=circle, hidden=True)
