@@ -1,51 +1,46 @@
 ---
 name: gh-canvas
-description: Work on a live Grasshopper canvas through the GH_MCP bridge (TCP port 8080) — place and wire components, read runtime errors, inspect the data that actually flows, lay out the canvas, size panels, and save versioned checkpoints. Use whenever the task involves Grasshopper, Rhino or a parametric definition that is open in the editor — including "tidy the canvas", "why is that component red", "what does it output", "wire X to Y".
+description: Work on a live Grasshopper canvas through the Grasshopper bridge (MCP tools of the `grasshopper` server, or its socket on port 8080) — place and wire components, read runtime errors, inspect the data that actually flows, lay out the canvas, size panels, and save versioned checkpoints. Use whenever the task involves Grasshopper, Rhino or a parametric definition that is open in the editor — including "tidy the canvas", "why is that component red", "what does it output", "wire X to Y".
 ---
 
 # Driving a Grasshopper canvas
 
-With the MCP server connected, every command below is a tool of the same name — call it
-directly and skip the socket snippet. Underneath, the bridge is a socket server inside Grasshopper. It answers one line-delimited JSON command
-per connection on `127.0.0.1:8080`. Full reference: `docs/commands.md`, protocol details in
-`docs/protocol.md`, and **read `docs/pitfalls.md` before building anything non-trivial.**
+Every command below is an MCP tool of the same name on the `grasshopper` server — call it
+directly. Full reference: `docs/commands.md`, and **read `docs/pitfalls.md` before building
+anything non-trivial.**
 
 ## Connecting
 
 Rhino must be running with the document open, the **Grasshopper MCP** component on the canvas
-and its toggle set to `True`. Check with `nc -z 127.0.0.1 8080`.
+and its toggle set to `True`. Call `get_document_info`; if it answers, you are connected.
 
-```python
-import json, socket
-def send(command, params=None, timeout=120):
-    s = socket.socket(); s.settimeout(timeout); s.connect(("localhost", 8080))
-    s.sendall((json.dumps({"type": command, "parameters": params or {}}) + "\n").encode())
-    data = b""
-    while not data.endswith(b"\n"):
-        chunk = s.recv(8192)
-        if not chunk: break
-        data += chunk
-    s.close()
-    return json.loads(data.decode("utf-8-sig").strip())
-```
-
-`tools/gh.py` is the same thing with a command-line entry point.
+Without an MCP client the same commands go over a socket, one line-delimited JSON object per
+connection on `127.0.0.1:8080` — `tools/gh.py` is a ready client, `docs/protocol.md` has the
+details. The examples in these skills write calls as `command {arguments}`; that is the tool
+call and the socket payload alike.
 
 ## Commands
 
 **Read** — `get_document_info`, `get_component_info` {id}, `get_component_output` {id, limit},
-`get_connections`, `get_errors`, `get_layout`, `search_components` {query}
+`get_connections` {id?}, `get_errors`, `get_layout` {ids?, grips?}, `search_components` {query}
+
+On a large document `get_layout` and `get_connections` return tens of thousands of characters.
+Ask for what you need: `get_layout` {ids, grips: false}, `get_connections` {id}.
 
 **Build** — `add_component` {type, x, y}, `connect_components` {sourceId, targetId,
-sourceParam, targetParamIndex}, `disconnect_components` {targetId, targetParam},
-`delete_component` {id}, `add_variable_parameter` {id, index, side}
+sourceParamIndex, targetParamIndex, append?}, `disconnect_components` {targetId,
+targetParamIndex, sourceId?}, `delete_component` {id}, `add_variable_parameter` {id, index, side}
 
-**Values and labels** — `set_component_value`, `set_param_value` {id, index, value},
-`set_slider` {id, min, max, value, digits, name}, `set_nickname`, `set_value_list`,
-`set_colour`, `set_script`
+**Values and labels** — `set_component_value` {id, value} for panels, sliders and toggles,
+`set_param_value` {id, index, value}, `set_slider` {id, min, max, value, digits, name},
+`set_nickname`, `set_value_list`, `set_colour`, `set_script`
 
-**Layout** — `set_component_position` {items:[{id,x,y}]}, `set_component_size`,
-`create_group` {name, ids, color}, `set_preview` {id, hidden}
+**Layout and display** — `set_component_position` {items:[{id,x,y}]}, `set_component_size`,
+`create_group` {name, ids, color}, `add_to_group` / `remove_from_group` {groupId, ids},
+`set_wire_display` {id|ids, inputIndex?, mode}, `set_preview` {id, hidden},
+`set_enabled` {id|ids, enabled}
+
+**Solution and Rhino** — `recompute` {id?|ids?}, `bake_component` {id, layer?}
 
 **Document** — `save_document` {path?}, `load_document` {path}, `clear_document`
 
@@ -56,14 +51,14 @@ sourceParam, targetParamIndex}, `disconnect_components` {targetId, targetParam},
    `search_components` (it reports an `obsolete` flag) and verify the type name in the reply.
 2. **Wire targets by index, not by name.** Parameter names differ between plugin versions.
    Read the real names and positions with `get_component_info` first. Output names are often
-   surprising (`Larger than`, not `Result`) — a wrong name connects nothing and still reports
-   success.
+   surprising (`Larger than`, not `Result`). A new wire **replaces** the ones already on that
+   input; pass `append: true` to keep them.
 3. **Judge success by the data.** `get_component_output` after every wiring step; an empty
    list means the wire does nothing. Then `get_errors`. Never trust the return message alone.
 4. **A deleted component stays findable briefly.** Connecting to it succeeds and does nothing.
    When replacing a chain: place all new components, then rebuild all wiring, then verify.
-5. **Wrong order means data trees.** Check branch structure with a `Tree Statistics` component
-   before suspecting your logic. `Flatten Tree` and `Simplify Tree` are the usual fixes.
+5. **Wrong order means data trees.** `get_component_output` lists the branches (`path`,
+   `count`) — read them before suspecting your logic. `Flatten Tree` and `Simplify Tree` are the usual fixes.
 6. **Restart Rhino only after replacing the `.gha`.** Normal canvas work never needs one.
    Batch bridge changes into a single build and restart.
 7. **Checkpoint before layout passes and chain replacements** — moving components creates no
@@ -80,8 +75,8 @@ python3 tools/gh_layout.py --check        # report real overlaps, move nothing
 python3 tools/gh_preview.py               # hide helper geometry in the viewport
 ```
 
-Groups survive being moved — membership is by id, not position. There is no "add to group";
-delete the group and recreate it with the full member list.
+Groups survive being moved — membership is by id, not position. Change membership with
+`add_to_group` and `remove_from_group`.
 
 ## Checkpoints
 

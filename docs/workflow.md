@@ -1,8 +1,8 @@
 # Working with an assistant on a live canvas
 
-How to use this without producing a mess. The rules come from building a ~285-component
-production chain this way; the reasoning matters
-more than the specific commands.
+How to use this without producing a mess. The rules come from building a production
+definition of nearly 300 components this way; the reasoning matters more than the specific
+commands.
 
 ## The loop
 
@@ -14,6 +14,8 @@ connect_components  →  by index
 get_component_output→  did data actually arrive?
 get_errors          →  did anything turn orange or red?
 ```
+
+With an MCP client these are tool calls; `/onboarding-grasshopper-bridge` walks through them.
 
 Six steps, not two. Skipping the last two is what produces canvases that look right and
 compute nothing.
@@ -42,8 +44,8 @@ nothing forces tidiness. Three habits keep it usable:
 
 ## Prefer coupling over discipline
 
-Whenever two values must agree — a base under a machine, a sheet on a table, a working plane
-on top of material — **wire them together instead of providing two sliders**. Two independent
+Whenever two values must agree — a hole spacing and the panel it sits in, a floor height and
+the stair that reaches it — **wire them together instead of providing two sliders**. Two independent
 inputs for one physical fact is a bug waiting for a distracted moment.
 
 Every time this rule was applied, a pair of sliders disappeared and a class of error with it.
@@ -60,15 +62,15 @@ Two subtleties that made such checks honest in practice:
 - A test that reports *containment* the same way as *intersection* cannot tell "safely inside"
   from "sticking through the boundary". Containment needs its own test — for an axis-aligned
   box, checking the bounding-box corners is exact and cheap.
-- Never judge feasibility from the *achieved* result when the solver substitutes a fallback
-  for impossible inputs — measure the **commanded** value against the limit instead. (Inverse
-  kinematics is the classic case: out-of-range targets come back as plausible poses.)
+- Never judge feasibility from the *achieved* result when a solver substitutes a fallback
+  for impossible inputs — measure the **commanded** value against the limit instead. Any
+  component that clamps or snaps its input behaves this way.
 
 ## Where to draw the line at scripting
 
-Grasshopper components are readable by the people who inherit the file; scripts are not. This
-project used exactly one script component, for the single thing with no native equivalent
-(a file name that varies with the data). Everything else is vanilla.
+Grasshopper components are readable by the people who inherit the file; scripts are not. The
+definition these rules come from needed exactly one script component, for the single thing
+with no native equivalent (a file name that varies with the data). Everything else is vanilla.
 
 Worth knowing when someone objects to scripts: **GhPython and C# components run inside Rhino**.
 They need nothing installed. External Python is only needed for tooling that drives the bridge
@@ -77,6 +79,6 @@ from outside — which is an operator's convenience, never a requirement for the
 ## Visualise the thing being made
 
 The parts of this build that paid off most were not the clever ones — they were the ones
-that show state: a section plane moving through the model, a path turning red when it leaves
-its bounds, a mechanism turning red when a command is infeasible. Cheap to build with
+that show state: a section plane moving through the model, a curve turning red when it leaves
+its bounds, a part turning red when it no longer fits. Cheap to build with
 `Custom Preview` plus a colour switch, and each one replaces a paragraph of explanation.

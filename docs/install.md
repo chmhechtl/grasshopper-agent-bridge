@@ -1,10 +1,10 @@
 # Installing the bridge
 
-One file (`GH_MCP.gha`) goes into Grasshopper's Libraries folder, then you place a component on
-the canvas. There is no installer and nothing to configure.
+Two parts: one file (`GH_MCP.gha`) goes into Grasshopper's Libraries folder and you place a
+component on the canvas; then your assistant connects to it through the MCP server.
 
-**Requirements: Rhino 7 with Grasshopper.** That is all the bridge needs. Python 3 is optional
-and only for the helper scripts in `tools/`.
+**Requirements: Rhino 7 with Grasshopper** for the bridge. The MCP server and the helper
+scripts in `tools/` need Python 3.10+ on the same machine.
 
 ## Option A: download the build
 
@@ -59,6 +59,25 @@ The release archive also contains `Newtonsoft.Json.dll`. Copy it into the same f
 Grasshopper reports that assembly as missing — Rhino ships its own copy, and adding a second one
 where it is not needed can collide with other plugins.
 
+## Run
+
+1. **Restart Rhino.** .NET Framework cannot unload an assembly, so a replaced `.gha` is only
+   picked up at the next start. This is the one thing that will trip you up repeatedly:
+   editing the bridge always costs a restart, editing your Grasshopper document never does.
+2. In Grasshopper, find **Grasshopper MCP** under **Params → Util** and place it.
+3. Wire a **Boolean Toggle** to its input and set it to `True`.
+4. The status output reads `Running on port 8080`.
+
+Verify from a terminal:
+
+```bash
+nc -z 127.0.0.1 8080 && echo "bridge is listening"
+```
+
+```bash
+printf '{"type":"get_document_info","parameters":{}}\n' | nc 127.0.0.1 8080
+```
+
 ## Connect an MCP client
 
 The MCP server is one Python file, `server/gh_mcp_server.py`. It needs Python 3.10+ and the
@@ -89,25 +108,6 @@ against version 1 of the SDK). `GH_BRIDGE_HOST`,
 `GH_BRIDGE_PORT` and `GH_BRIDGE_TIMEOUT` override the defaults (`127.0.0.1`, `8080`, 120 s).
 
 Then run `/onboarding-grasshopper-bridge` for a guided tour.
-
-## Run
-
-1. **Restart Rhino.** .NET Framework cannot unload an assembly, so a replaced `.gha` is only
-   picked up at the next start. This is the one thing that will trip you up repeatedly:
-   editing the bridge always costs a restart, editing your Grasshopper document never does.
-2. In Grasshopper, find **Grasshopper MCP** under **Params → Util** and place it.
-3. Wire a **Boolean Toggle** to its input and set it to `True`.
-4. The status output reads `Running on port 8080`.
-
-Verify from a terminal:
-
-```bash
-nc -z 127.0.0.1 8080 && echo "bridge is listening"
-```
-
-```bash
-printf '{"type":"get_document_info","parameters":{}}\n' | nc 127.0.0.1 8080
-```
 
 ## Notes on the listener
 

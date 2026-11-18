@@ -6,40 +6,33 @@ description: Diagnose a misbehaving Grasshopper definition through the bridge �
 # Diagnosing a live Grasshopper definition
 
 **Change nothing until you know what is wrong.** Every command here is read-only. The order
-matters: it goes from cheapest and most common to rarest.
+matters: it goes from cheapest and most common to rarest. Calls are written as
+`command {arguments}` — the MCP tool of that name, or the same payload over the socket.
 
 ## 0. Is the bridge even answering?
 
-```bash
-nc -z 127.0.0.1 8080
-```
+Call `get_document_info`.
 
 | Observation | Cause |
 |---|---|
-| Connection refused | Toggle `False`, component missing, or Rhino still loading |
+| Not reachable / connection refused | Toggle `False`, component missing, or Rhino still loading |
 | Reads answer, anything that re-solves times out | **A modal dialog is open in Rhino.** Some components open one when placed. The command ran; a human has to dismiss the dialog |
 | `No handler registered for command type` | The loaded `.gha` is older than the source. Restart Rhino |
 
 ## 1. Read the messages
 
-```python
-send("get_errors")
-```
-
-Gives every component with a runtime message, its level, and its canvas position.
+`get_errors` gives every component with a runtime message, its level, and its canvas position.
 
 **Messages persist until the component recomputes.** A warning can outlive its cause and
 send you hunting for a problem that is already fixed. Before believing one, check whether the
-component currently produces data (step 2). If it does, force a re-solve by nudging any
-upstream value and read again.
+component currently produces data (step 2). If it does, `recompute {id}` and read again —
+that changes no value and clears what is stale.
 
 ## 2. Follow the data, not the wires
 
 This is the step that resolves most problems.
 
-```python
-send("get_component_output", {"id": suspect, "limit": 10})
-```
+`get_component_output {id: suspect, limit: 10}`
 
 - **Empty list** → nothing arrives. The wire does not work, whatever the wiring call reported.
 - **Data present but wrong** → the wiring is fine, the logic or the input is not.
@@ -50,23 +43,24 @@ expect. The break is between that one and its consumer.
 
 ## 3. When a wire looks connected but is not
 
-```python
-send("get_connections")
-```
+`get_connections {id: suspect}` — the wires into and out of one object.
 
-Three causes, all of which report success at wiring time:
+Four causes:
 
 - **The source was deleted moments before.** A deleted component stays findable briefly;
   connecting to its id succeeds and does nothing.
+- **A later wire replaced it.** `connect_components` replaces the wires already on an input
+  unless it was called with `append: true`.
 - **The output name does not exist.** Comparison components output `Larger than`, not
-  `Result`. A wrong name connects nothing.
+  `Result`. Since 0.2.1 this is reported as an error; older bridges said success.
 - **The target parameter name changed between plugin versions.** Read the real names with
   `get_component_info` and wire targets by index.
 
 ## 4. Wrong order, wrong grouping, duplicated or missing items
 
-**Suspect the data tree before your logic.** Place a `Tree Statistics` component, feed it the
-suspect output, and read `Paths` and `Length`.
+**Suspect the data tree before your logic.** `get_component_output` reports `branchCount` and
+`branches[]` with each `path` and `count` — read them on the suspect output and on what feeds
+it.
 
 Known shapes:
 
@@ -86,7 +80,7 @@ set. The orphans are unwired, produce warnings, and look exactly like a bug in t
 
 ```python
 known = set(your_id_map.values())
-wired = {c["sourceId"] for c in conns} | {c["targetId"] for c in conns}
+wired = {c["sourceId"] for c in conns} | {c["targetId"] for c in conns}   # get_connections
 orphans = [o for o in layout["objects"] if o["id"] not in known and o["id"] not in wired]
 ```
 
@@ -105,6 +99,8 @@ companion stays behind, orphaned.
 
 ## 7. Geometry in the wrong place
 
+- A component that produces nothing at all may simply be **disabled** — `set_enabled` exists,
+  and so does the canvas menu.
 - **Pivot is not the box corner.** `get_layout` returns `x`/`y` (pivot) and `left`/`top` (real
   box). Anything positional computed from pivots is wrong by a component-specific offset.
 - A solver that substitutes a **fallback result** for an impossible input will not report the

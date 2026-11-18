@@ -37,8 +37,8 @@ Three separate ordering bugs, all the same root cause:
 | An inserted point landed twice at the start and never at the end | `Merge` concatenates **per branch**; different branches sit side by side |
 
 `Simplify Tree` and `Flatten Tree` fix these, but the lesson is diagnostic: **when items come
-out in the wrong order, look at the branch structure before you look at your logic.** Put a
-`Tree Statistics` component on the canvas and read its `Paths`.
+out in the wrong order, look at the branch structure before you look at your logic.**
+`get_component_output` lists every branch with its path and item count.
 
 ## A modal dialog freezes everything
 
