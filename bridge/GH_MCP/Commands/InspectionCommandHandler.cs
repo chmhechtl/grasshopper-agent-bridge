@@ -176,6 +176,12 @@ namespace GrasshopperMCP.Commands
                 {
                     group.Colour = System.Drawing.ColorTranslator.FromHtml(colorHex);
                 }
+                else
+                {
+                    // A new GH_Group has no colour of its own and draws as nothing at all.
+                    // This is the grey Grasshopper gives a group made with Ctrl+G.
+                    group.Colour = System.Drawing.Color.FromArgb(150, 170, 135, 255);
+                }
 
                 int added = 0;
                 foreach (var token in idArray)

@@ -156,7 +156,8 @@ hundreds.
 `id`, `width`, `height` — mainly for panels; the default box is too small for generated code.
 
 ### `create_group`
-`name`, `ids[]`, optional `color`.
+`name`, `ids[]`, optional `color` (`#RRGGBB`, drawn opaque — choose a light tint). Without one the
+group gets Grasshopper's default grey.
 
 ### `add_to_group`
 `groupId`, `ids[]` — adds existing objects to an existing group. → `added`, `skipped`
