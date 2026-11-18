@@ -257,9 +257,8 @@ namespace GrasshopperMCP.Commands
                         throw new InvalidOperationException($"Could not open {path}");
                     }
 
-                    // Das alte Dokument MUSS weg: Robot Components meldet sonst
-                    // "variable name already in use", because tool and work-object names
-                    // must be unique across every open document.
+                    // The previous document must go: some plugins require names to be unique
+                    // across every open document and report "already in use" otherwise.
                     var previous = Grasshopper.Instances.ActiveCanvas.Document;
 
                     io.Document.FilePath = path;

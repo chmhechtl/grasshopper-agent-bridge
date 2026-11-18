@@ -73,6 +73,6 @@ This is deliberate: the bridge reports what the canvas shows, it is not a geomet
 serialisation format. For numbers, parse; for geometry, use it as an identity check, not as
 data. If you need real geometry out, write it to a file from inside Grasshopper.
 
-Trees are flattened in `get_component_output`; the `count` field is the total across all
-branches. When branch structure matters, put a `Tree Statistics` component on the canvas and
-read its `Paths` output — the bridge has no separate tree inspection command.
+Items are flattened in `get_component_output`; the `count` field is the total across all
+branches. The tree structure comes alongside as `branches[]` — each branch's path and item
+count.

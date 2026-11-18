@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "grasshopper": {
+      "command": "uv",
+      "args": ["run", "${CLAUDE_PLUGIN_ROOT}/server/gh_mcp_server.py"]
+    }
+  }
+}

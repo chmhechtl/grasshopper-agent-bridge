@@ -1,7 +1,7 @@
 # Working with an assistant on a live canvas
 
 How to use this without producing a mess. The rules come from building a ~285-component
-production chain this way (the case study in `examples/robotics/`); the reasoning matters
+production chain this way; the reasoning matters
 more than the specific commands.
 
 ## The loop

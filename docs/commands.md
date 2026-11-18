@@ -1,6 +1,7 @@
 # Command reference
 
-31 commands. Parameters are the keys inside `parameters`.
+37 commands. Parameters are the keys inside `parameters`. The MCP server
+(`server/gh_mcp_server.py`) exposes each one as a tool of the same name with the same keys.
 
 ## Reading
 
@@ -15,7 +16,9 @@ No parameters. → `name`, `path`, `componentCount`, `components[]` with `id`, `
 you should wire against.
 
 ### `get_component_output`
-`id`, `limit` (default 50) — the **volatile data** on each output, as strings, plus `count`.
+`id`, `limit` (default 50) — the **volatile data** on each output, as strings, plus `count`,
+`branchCount` and `branches[]` (`path`, `count`) — the tree structure, so a branch mismatch is
+visible without placing a Tree Statistics component.
 
 The single most useful command in the set. A component that reports success but produces an
 empty list is not wired the way you think.
@@ -62,7 +65,7 @@ component's output is `Larger than`, not `Result` — and a wrong name silently 
 nothing while still reporting success.
 
 ### `disconnect_components`
-`targetId`, plus `targetParam` (**name only**, not an index), optionally `sourceId` to remove
+`targetId`, plus `targetParam` (name) or `targetParamIndex`, optionally `sourceId` to remove
 a single wire instead of all of them.
 
 ### `delete_component`
@@ -83,10 +86,10 @@ Plugins are inconsistent about the method name behind it; the bridge tries `AddP
 
 ### `set_component_value`
 `id`, `value` — panels take text, sliders take a number or an init string
-(`"0.0 < 5.0 < 100.0"`). Expires the component, so the new value actually propagates.
+(`"0.0 < 5.0 < 100.0"`), boolean toggles take `true` / `false`. Expires the component, so the new value actually propagates.
 
-Does **not** work on boolean toggles or colour swatches — see `set_param_value` and
-`set_colour`.
+Does **not** work on colour swatches — see `set_colour`. Do not switch off the toggle that
+feeds the bridge component: the listener stops and nothing can switch it back on.
 
 ### `set_param_value`
 `id`, `index`, `value` — writes a persistent value into an input that has no wire. Works for
@@ -126,12 +129,45 @@ hundreds.
 `id`, `width`, `height` — mainly for panels; the default box is too small for generated code.
 
 ### `create_group`
-`name`, `ids[]`, optional `color` — there is no "add to existing group"; rebuild the group with
-the full member list.
+`name`, `ids[]`, optional `color`.
+
+### `add_to_group`
+`groupId`, `ids[]` — adds existing objects to an existing group. → `added`, `skipped`
+(already members or not found), `members`.
+
+### `remove_from_group`
+`groupId`, `ids[]` — takes objects out of a group; they stay on the canvas. → `removed`,
+`skipped`, `members`.
+
+### `set_wire_display`
+`mode` (`default` / `faint` / `hidden`), and `id` or `ids[]`, optional `inputIndex` — how the
+wires **into** a parameter are drawn. Without `inputIndex` the target must be a standalone
+parameter (relay, number, panel); with it, that input of a component. → `changed`, `skipped`.
+
+Long wires that cross the whole canvas are the usual candidates for `faint`. Hidden wires still
+carry data — `get_connections` keeps reporting them.
+
+### `set_enabled`
+`enabled`, and `id` or `ids[]` — the canvas' Enabled switch. A disabled component computes
+nothing and passes no data on. → `changed`, `skipped`. The bridge component itself is skipped.
 
 ### `set_preview`
 `id`, `hidden` — hides a component's viewport preview. Essential once a plugin starts drawing
 an axis cross per target.
+
+## Solution and Rhino
+
+### `recompute`
+No parameters: expire and recompute the whole document. With `id` or `ids[]`: only those
+objects and everything downstream. → `all`, `expired`, `missing`.
+
+The cure for stale runtime messages — `get_errors` after a `recompute` shows what is true now.
+
+### `bake_component`
+`id`, optional `layer` — bakes the object's geometry into the active Rhino document. The layer
+is created when missing. → `count`, `objects[]` (Rhino object ids).
+
+Baking twice gives two copies; the bridge does not track what it baked before.
 
 ## Document
 

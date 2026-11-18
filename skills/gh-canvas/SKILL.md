@@ -5,7 +5,8 @@ description: Work on a live Grasshopper canvas through the GH_MCP bridge (TCP po
 
 # Driving a Grasshopper canvas
 
-The bridge is a socket server inside Grasshopper. It answers one line-delimited JSON command
+With the MCP server connected, every command below is a tool of the same name — call it
+directly and skip the socket snippet. Underneath, the bridge is a socket server inside Grasshopper. It answers one line-delimited JSON command
 per connection on `127.0.0.1:8080`. Full reference: `docs/commands.md`, protocol details in
 `docs/protocol.md`, and **read `docs/pitfalls.md` before building anything non-trivial.**
 

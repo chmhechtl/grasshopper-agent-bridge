@@ -53,6 +53,23 @@ re-layout, which is the expensive and disruptive option.
 9. **Detect and repair overlaps** against real bounding boxes, then write every position back
    in **one batched `set_component_position` call** — one solve instead of several hundred.
 
+## Naming conventions the layout understands
+
+All optional — a canvas that uses none of them is laid out exactly as described above.
+
+- **`NOTE…` panels** (nickname starts with `NOTE`) are annotations. They keep the size a human
+  gave them and sit at the top left of their group instead of drifting to column 0.
+- **`← …` parameters** (nickname starts with `←`) are a group's inputs: relays that bring a value
+  in from elsewhere. They are placed one column left of the group's first column, so each group
+  reads as a closed block with its inputs on the left edge.
+- **A group named `00 · Settings`** is treated as the definition's control panel. Its wires fan
+  out to every band, so they are ignored when columns are computed, and its members are stacked
+  in member order — each `NOTE Settings · …` panel opens a new column.
+
+The three names are constants at the top of `gh_layout.py`.
+
+An unknown flag stops the script before anything moves.
+
 ## The trap that will get you
 
 **A component's pivot is not the corner of its box.** `get_layout` returns both: `x`/`y` is the

@@ -39,56 +39,61 @@ intentions.
 | **Keep it safe** | `save_document`, `load_document` | Versioned checkpoints; any experiment is one command from rollback |
 | **Reach everything** | `add_variable_parameter`, `set_value_list`, `set_param_value`, `set_script` | Plugin parameters hidden in right-click menus, list selections, embedded scripts |
 
-31 commands in total, JSON over a local socket, no dependencies inside Grasshopper.
+| **Group and quieten** | `add_to_group`, `remove_from_group`, `set_wire_display`, `set_enabled` | Regroup without rebuilding, fade the wires nobody needs to follow, switch a branch off |
+| **Solve and hand over** | `recompute`, `bake_component` | Clear stale messages on demand; put the result into the Rhino document |
+
+37 commands in total, JSON over a local socket, no dependencies inside Grasshopper — and an
+[MCP server](server/gh_mcp_server.py) that offers them as tools to any MCP client.
 Full reference in [docs/commands.md](docs/commands.md).
 
 ## What is in here
 
 ```
 bridge/             the .gha source (C#, targets Rhino 7 / .NET Framework 4.8)
+server/             the MCP server: every bridge command as a tool (one Python file)
 docs/               install, protocol, command reference, workflow, pitfalls
-skills/             three agent skills — build, diagnose, extend (see below)
+skills/             four agent skills — onboarding, build, diagnose, extend (see below)
 tools/              optional operator helpers: layout, checkpoints, preview control
-examples/           a short worked example, plus the case study this was built on
+examples/           a short worked example
 ```
 
-The Python tools run on the operator's machine and are optional — the bridge speaks plain
-JSON over a socket, any language works, and Grasshopper itself needs nothing installed.
+The MCP server and the Python tools run on the operator's machine. Both are optional — the
+bridge speaks plain JSON over a socket, any language works, and Grasshopper itself needs
+nothing installed.
 
 ## Quickstart
 
 1. Build and install the bridge → [docs/install.md](docs/install.md)
 2. Drop the **Grasshopper MCP** component on the canvas (Params → Util), toggle to `True`.
    The status panel reads `Running on port 8080`.
-3. Talk to it:
+3. Connect your assistant. As a Claude Code plugin — MCP server and skills in one step:
 
-```python
-import json, socket
-
-def send(command, params=None):
-    s = socket.socket(); s.connect(("localhost", 8080))
-    s.sendall((json.dumps({"type": command, "parameters": params or {}}) + "\n").encode())
-    data = b""
-    while not data.endswith(b"\n"):
-        chunk = s.recv(8192)
-        if not chunk:
-            break
-        data += chunk
-    s.close()
-    return json.loads(data.decode("utf-8-sig").strip())
-
-print(send("get_document_info"))
+```
+/plugin marketplace add chmhechtl/grasshopper-agent-bridge
+/plugin install grasshopper-agent-bridge@grasshopper-agent-bridge
 ```
 
-4. Give your assistant the skills.
+   Or register the MCP server alone, in any MCP client:
+
+```bash
+claude mcp add grasshopper -- uv run /path/to/grasshopper-agent-bridge/server/gh_mcp_server.py
+```
+
+4. Run **`/onboarding-grasshopper-bridge`**. The assistant checks the connection, explains every
+   command and what the bridge makes possible, and offers a first live demo.
+
+No MCP client? The bridge is a socket — see [docs/protocol.md](docs/protocol.md) for a
+ten-line client, or use `tools/gh.py`.
 
 ## The skills
 
-Drop them into your agent's skills folder (for Claude Code: `.claude/skills/`). Each is a
+The plugin installs them. Without it, drop them into your agent's skills folder (for Claude
+Code: `.claude/skills/`). Each is a
 single `SKILL.md`; they load on their own when the situation matches.
 
 | Skill | For |
 |---|---|
+| [onboarding-grasshopper-bridge](skills/onboarding-grasshopper-bridge/SKILL.md) | **Start here.** `/onboarding-grasshopper-bridge` — a guided tour: connection check, every command by purpose, the rules, the limits |
 | [gh-canvas](skills/gh-canvas/SKILL.md) | **Building.** Connect, place by GUID, wire, verify the data, keep the canvas readable |
 | [gh-diagnose](skills/gh-diagnose/SKILL.md) | **Something is wrong.** A read-only procedure: messages → data → wires → trees → orphans, before anything is changed |
 | [gh-bridge-dev](skills/gh-bridge-dev/SKILL.md) | **The bridge is missing a command.** Handler, registration, build, redeploy — and how to reach plugin internals by reflection |
@@ -131,7 +136,7 @@ Learned over one long build; the full list with evidence is in
 
 ## Examples
 
-**[examples/facade-panel/](examples/facade-panel/) — start here.** A panel with a grid of holes
+**[examples/facade-panel/](examples/facade-panel/)** A panel with a grid of holes
 sized by an attractor point, built from an outcome-level brief in about nine minutes. Vanilla
 Grasshopper only, nothing to install. Worth reading not because it worked, but because the agent
 knew *why* it worked at each step: it measured the removed material to confirm the holes were
@@ -139,18 +144,6 @@ real openings, verified a rotation by the resulting centroid rather than by the 
 and — between two sessions — correctly worked out that the sliders had been moved by hand rather
 than "fixing" the human's edits. It also turned up two genuine limitations, including one in the
 layout tool that `--check` could not see.
-
-### The case study
-
-The loop was built and hardened on a real project: an industrial-robot programming chain of
-~285 components — model slicing, cell geometry, tool calibration, collision and reach
-checking, simulation, and machine-code export, assembled and debugged almost entirely through
-this bridge. [examples/robotics/](examples/robotics/) contains the domain scripts from that
-project; they double as patterns for driving any domain-specific chain (find components by
-type instead of stored id, step a slider and read a verdict, refuse to export when a check
-fails).
-
-Nothing else in this repository depends on robotics.
 
 ## Status and scope
 

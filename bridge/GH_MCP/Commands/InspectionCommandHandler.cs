@@ -189,6 +189,292 @@ namespace GrasshopperMCP.Commands
         }
 
         /// <summary>
+        /// Removes objects from a group. The objects themselves stay on the canvas.
+        /// </summary>
+        public static object RemoveFromGroup(Command command)
+        {
+            string groupIdStr = command.GetParameter<string>("groupId");
+            var idArray = command.GetParameter<Newtonsoft.Json.Linq.JArray>("ids");
+
+            if (string.IsNullOrEmpty(groupIdStr) || !Guid.TryParse(groupIdStr, out var groupId))
+            {
+                throw new ArgumentException("Valid groupId is required");
+            }
+            if (idArray == null || idArray.Count == 0)
+            {
+                throw new ArgumentException("Parameter 'ids' (list of component ids) is required");
+            }
+
+            return RunOnUiThread(doc =>
+            {
+                if (!(doc.FindObject(groupId, true) is Grasshopper.Kernel.Special.GH_Group group))
+                {
+                    throw new ArgumentException($"No group with ID {groupIdStr}");
+                }
+
+                var removed = new List<string>();
+                var skipped = new List<string>();
+                foreach (var token in idArray)
+                {
+                    string s = token.ToString();
+                    if (Guid.TryParse(s, out var memberId) && group.ObjectIDs.Contains(memberId))
+                    {
+                        group.RemoveObject(memberId);
+                        removed.Add(s);
+                    }
+                    else
+                    {
+                        skipped.Add(s);
+                    }
+                }
+
+                group.ExpireCaches();
+                Grasshopper.Instances.ActiveCanvas?.Refresh();
+                return new { id = groupIdStr, name = group.NickName, removed, skipped, members = group.ObjectIDs.Count };
+            });
+        }
+
+        /// <summary>
+        /// Sets how the wires INTO a parameter are drawn: default, faint or hidden.
+        /// Targets a standalone parameter (relay, panel-less param) or input 'inputIndex' of a
+        /// component. Accepts 'id' or a batch 'ids' so many relays change in one refresh.
+        /// </summary>
+        public static object SetWireDisplay(Command command)
+        {
+            string mode = (command.GetParameter<string>("mode") ?? "").ToLowerInvariant();
+            GH_ParamWireDisplay display;
+            switch (mode)
+            {
+                case "default": display = GH_ParamWireDisplay.@default; break;
+                case "faint": display = GH_ParamWireDisplay.faint; break;
+                case "hidden": display = GH_ParamWireDisplay.hidden; break;
+                default: throw new ArgumentException("mode must be default, faint or hidden");
+            }
+
+            // GetParameter<int> yields 0 for a missing key, which would mean "input 0" here.
+            int inputIndex = command.Parameters != null && command.Parameters.ContainsKey("inputIndex")
+                ? command.GetParameter<int>("inputIndex") : -1;
+
+            var ids = new List<string>();
+            var idArray = command.GetParameter<Newtonsoft.Json.Linq.JArray>("ids");
+            if (idArray != null) { ids.AddRange(idArray.Select(t => t.ToString())); }
+            string single = command.GetParameter<string>("id");
+            if (!string.IsNullOrEmpty(single)) { ids.Add(single); }
+            if (ids.Count == 0)
+            {
+                throw new ArgumentException("Parameter 'id' or 'ids' is required");
+            }
+
+            return RunOnUiThread(doc =>
+            {
+                var changed = new List<string>();
+                var skipped = new List<string>();
+                foreach (var s in ids)
+                {
+                    IGH_Param param = null;
+                    if (Guid.TryParse(s, out var id))
+                    {
+                        var obj = doc.FindObject(id, true);
+                        if (obj is IGH_Param p && inputIndex < 0)
+                        {
+                            param = p;
+                        }
+                        else if (obj is IGH_Component c && inputIndex >= 0 && inputIndex < c.Params.Input.Count)
+                        {
+                            param = c.Params.Input[inputIndex];
+                        }
+                    }
+                    if (param == null)
+                    {
+                        skipped.Add(s);
+                        continue;
+                    }
+                    param.WireDisplay = display;
+                    param.Attributes?.ExpireLayout();
+                    changed.Add(s);
+                }
+
+                Grasshopper.Instances.ActiveCanvas?.Refresh();
+                return new { mode, changed, skipped };
+            });
+        }
+
+        /// <summary>
+        /// Adds existing objects to an existing group. Ids already in the group are skipped.
+        /// </summary>
+        public static object AddToGroup(Command command)
+        {
+            string groupIdStr = command.GetParameter<string>("groupId");
+            var idArray = command.GetParameter<Newtonsoft.Json.Linq.JArray>("ids");
+
+            if (string.IsNullOrEmpty(groupIdStr) || !Guid.TryParse(groupIdStr, out var groupId))
+            {
+                throw new ArgumentException("Valid groupId is required");
+            }
+            if (idArray == null || idArray.Count == 0)
+            {
+                throw new ArgumentException("Parameter 'ids' (list of component ids) is required");
+            }
+
+            return RunOnUiThread(doc =>
+            {
+                if (!(doc.FindObject(groupId, true) is Grasshopper.Kernel.Special.GH_Group group))
+                {
+                    throw new ArgumentException($"No group with ID {groupIdStr}");
+                }
+
+                var added = new List<string>();
+                var skipped = new List<string>();
+                foreach (var token in idArray)
+                {
+                    string s = token.ToString();
+                    if (Guid.TryParse(s, out var memberId) && memberId != groupId
+                        && doc.FindObject(memberId, true) != null && !group.ObjectIDs.Contains(memberId))
+                    {
+                        group.AddObject(memberId);
+                        added.Add(s);
+                    }
+                    else
+                    {
+                        skipped.Add(s);
+                    }
+                }
+
+                group.ExpireCaches();
+                Grasshopper.Instances.ActiveCanvas?.Refresh();
+                return new { id = groupIdStr, name = group.NickName, added, skipped, members = group.ObjectIDs.Count };
+            });
+        }
+
+        private static List<string> IdList(Command command)
+        {
+            var ids = new List<string>();
+            var idArray = command.GetParameter<Newtonsoft.Json.Linq.JArray>("ids");
+            if (idArray != null) { ids.AddRange(idArray.Select(t => t.ToString())); }
+            string single = command.GetParameter<string>("id");
+            if (!string.IsNullOrEmpty(single)) { ids.Add(single); }
+            return ids;
+        }
+
+        /// <summary>
+        /// Forces a recompute. Without ids the whole document is expired; with 'id'/'ids' only
+        /// those objects and everything downstream. Clears stale runtime messages.
+        /// </summary>
+        public static object Recompute(Command command)
+        {
+            var ids = IdList(command);
+            return RunOnUiThread(doc =>
+            {
+                var missing = new List<string>();
+                int expired = 0;
+                foreach (var s in ids)
+                {
+                    if (Guid.TryParse(s, out var id) && doc.FindObject(id, true) is IGH_ActiveObject active)
+                    {
+                        active.ExpireSolution(false);
+                        expired++;
+                    }
+                    else
+                    {
+                        missing.Add(s);
+                    }
+                }
+                doc.NewSolution(ids.Count == 0);
+                return new { all = ids.Count == 0, expired, missing };
+            });
+        }
+
+        /// <summary>
+        /// Enables or disables objects (the canvas' "Enabled" switch). A disabled component
+        /// does not compute and passes no data on.
+        /// </summary>
+        public static object SetEnabled(Command command)
+        {
+            var ids = IdList(command);
+            if (ids.Count == 0)
+            {
+                throw new ArgumentException("Parameter 'id' or 'ids' is required");
+            }
+            if (!command.Parameters.ContainsKey("enabled"))
+            {
+                throw new ArgumentException("Parameter 'enabled' (true/false) is required");
+            }
+            bool enabled = command.GetParameter<bool>("enabled");
+
+            return RunOnUiThread(doc =>
+            {
+                var changed = new List<string>();
+                var skipped = new List<string>();
+                foreach (var s in ids)
+                {
+                    if (Guid.TryParse(s, out var id) && doc.FindObject(id, true) is IGH_ActiveObject active
+                        && !(active is GrasshopperMCPComponent))
+                    {
+                        active.Locked = !enabled;
+                        active.ExpireSolution(false);
+                        changed.Add(s);
+                    }
+                    else
+                    {
+                        skipped.Add(s);
+                    }
+                }
+                doc.NewSolution(false);
+                Grasshopper.Instances.ActiveCanvas?.Refresh();
+                return new { enabled, changed, skipped };
+            });
+        }
+
+        /// <summary>
+        /// Bakes the geometry of a component or parameter into the active Rhino document,
+        /// optionally onto a named layer (created when missing). Returns the new object ids.
+        /// </summary>
+        public static object BakeComponent(Command command)
+        {
+            string idStr = command.GetParameter<string>("id");
+            string layerName = command.GetParameter<string>("layer");
+
+            if (string.IsNullOrEmpty(idStr) || !Guid.TryParse(idStr, out var id))
+            {
+                throw new ArgumentException("Valid component id is required");
+            }
+
+            return RunOnUiThread(doc =>
+            {
+                var bakeable = doc.FindObject(id, true) as IGH_BakeAwareObject;
+                if (bakeable == null || !bakeable.IsBakeCapable)
+                {
+                    throw new ArgumentException($"{idStr} has no geometry to bake");
+                }
+                var rhinoDoc = RhinoDoc.ActiveDoc;
+                if (rhinoDoc == null)
+                {
+                    throw new InvalidOperationException("No active Rhino document");
+                }
+
+                var attributes = rhinoDoc.CreateDefaultAttributes();
+                if (!string.IsNullOrEmpty(layerName))
+                {
+                    int layerIndex = rhinoDoc.Layers.FindByFullPath(layerName, -1);
+                    if (layerIndex < 0)
+                    {
+                        layerIndex = rhinoDoc.Layers.Add(layerName, System.Drawing.Color.Black);
+                    }
+                    if (layerIndex < 0)
+                    {
+                        throw new InvalidOperationException($"Could not create layer '{layerName}'");
+                    }
+                    attributes.LayerIndex = layerIndex;
+                }
+
+                var baked = new List<Guid>();
+                bakeable.BakeGeometry(rhinoDoc, attributes, baked);
+                rhinoDoc.Views.Redraw();
+                return new { id = idStr, layer = layerName, count = baked.Count, objects = baked.Select(g => g.ToString()).ToList() };
+            });
+        }
+
+        /// <summary>
         /// Removes wires feeding one input of a component. With sourceId only that wire is removed.
         /// </summary>
         public static object DisconnectComponents(Command command)
@@ -213,11 +499,20 @@ namespace GrasshopperMCP.Commands
                 IGH_Param input = null;
                 if (obj is IGH_Component component)
                 {
-                    if (string.IsNullOrEmpty(targetParamName))
+                    if (command.Parameters.ContainsKey("targetParamIndex"))
                     {
-                        throw new ArgumentException("targetParam is required for components");
+                        int index = command.GetParameter<int>("targetParamIndex");
+                        if (index < 0 || index >= component.Params.Input.Count)
+                        {
+                            throw new ArgumentException($"targetParamIndex {index} out of range (0..{component.Params.Input.Count - 1})");
+                        }
+                        input = component.Params.Input[index];
                     }
-                    input = component.Params.Input.FirstOrDefault(p =>
+                    else if (string.IsNullOrEmpty(targetParamName))
+                    {
+                        throw new ArgumentException("targetParam or targetParamIndex is required for components");
+                    }
+                    else input = component.Params.Input.FirstOrDefault(p =>
                         p.Name.Equals(targetParamName, StringComparison.OrdinalIgnoreCase) ||
                         p.NickName.Equals(targetParamName, StringComparison.OrdinalIgnoreCase));
                     if (input == null)
@@ -339,7 +634,14 @@ namespace GrasshopperMCP.Commands
                         if (items.Count >= limit) { break; }
                         items.Add(goo?.ToString() ?? "<null>");
                     }
-                    return new { name = p.Name, count = p.VolatileDataCount, items };
+                    // Branch paths, so tree mismatches show up without an extra component.
+                    var branches = new List<object>();
+                    var data = p.VolatileData;
+                    for (int i = 0; i < data.PathCount && i < limit; i++)
+                    {
+                        branches.Add(new { path = data.Paths[i].ToString(), count = data.get_Branch(i).Count });
+                    }
+                    return new { name = p.Name, count = p.VolatileDataCount, branchCount = data.PathCount, branches, items };
                 }
 
                 var outputs = new List<object>();
@@ -414,6 +716,8 @@ namespace GrasshopperMCP.Commands
                         continue;
                     }
 
+                    // A minimised canvas never lays out new objects, their Bounds stay (0,0).
+                    obj.Attributes?.PerformLayout();
                     var bounds = obj.Attributes != null
                         ? obj.Attributes.Bounds
                         : new System.Drawing.RectangleF();
@@ -492,6 +796,7 @@ namespace GrasshopperMCP.Commands
                     }
                     obj.Attributes.Pivot = new System.Drawing.PointF(item.Item2, item.Item3);
                     obj.Attributes.ExpireLayout();
+                    obj.Attributes.PerformLayout();
                     moved++;
                 }
                 doc.DestroyAttributeCache();
@@ -502,7 +807,7 @@ namespace GrasshopperMCP.Commands
 
         /// <summary>
         /// Resizes a component's box on the canvas — mainly for panels, whose default box is
-        /// too small for generated RAPID code.
+        /// too small for long text or generated code.
         /// </summary>
         public static object SetComponentSize(Command command)
         {
@@ -864,9 +1169,9 @@ namespace GrasshopperMCP.Commands
         }
 
         /// <summary>
-        /// Toggles one of a component's variable input parameters — the entries that Robot Components
-        /// and similar plugins expose only through their right-click menu (e.g. Move → Override Work
-        /// Object). Calls the component's private AddParameter(int) via reflection.
+        /// Toggles one of a component's variable parameters — the entries some plugins expose
+        /// only through their right-click menu. Calls the component's private AddParameter(int)
+        /// (or a sibling, see below) via reflection.
         /// </summary>
         public static object AddVariableParameter(Command command)
         {
@@ -886,12 +1191,10 @@ namespace GrasshopperMCP.Commands
                     throw new ArgumentException($"Component with ID {idStr} not found");
                 }
 
-                // Robot Components hides some parameters behind the right-click menu.
-                // Inputs go through AddParameter(int), outputs through
-                // AddOutputParameter(int) — e.g. Forward Kinematics → Posed Meshes.
+                // Plugins hide some parameters behind the right-click menu. Inputs usually go
+                // through AddParameter(int), outputs through AddOutputParameter(int).
                 string side = command.GetParameter<string>("side");
-                // Robot Components is not consistent: Move uses AddParameter, Forward
-                // Kinematics AddOutputParameter, the RAPID Generator AddInputParameter.
+                // The method name is not standardised, even within one plugin, so probe.
                 var candidates = string.Equals(side, "output", StringComparison.OrdinalIgnoreCase)
                     ? new[] { "AddOutputParameter", "AddParameter" }
                     : new[] { "AddParameter", "AddInputParameter" };

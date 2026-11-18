@@ -1,0 +1,14 @@
+{
+  "name": "grasshopper-agent-bridge",
+  "description": "MCP server and skills for driving a live Grasshopper canvas.",
+  "owner": {
+    "name": "grasshopper-agent-bridge contributors"
+  },
+  "plugins": [
+    {
+      "name": "grasshopper-agent-bridge",
+      "source": "./",
+      "description": "MCP server and skills for driving a live Grasshopper canvas."
+    }
+  ]
+}

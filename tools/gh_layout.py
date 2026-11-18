@@ -26,11 +26,18 @@ GUTTER_Y = 14   # vertical air between two components in the same column
 BAND_GAP = 70   # air between two group bands — must clear the group box frame plus its name tab
 MARGIN_X, MARGIN_Y = 60, 60
 
-# ponytail: panels default to 120x60, too small for RAPID output. Widen the ones
+# ponytail: panels default to 120x60, too small for long output. Widen the ones
 # that carry code, keep value panels compact.
 PANEL_SMALL = (110, 26)
 PANEL_LARGE = (420, 340)
 LARGE_PANEL_MIN_CHARS = 200
+
+# The settings group is laid out by hand: one column per "NOTE Settings · ..."
+# heading, in the group's member order. Its wires leave for every band, so
+# they are ignored for the flow columns — the relays then sit next to their targets.
+SETTINGS = "00 · Settings"
+HEADING = "NOTE Settings ·"
+RELAY = "←"  # group input relays, see "← name (group)"
 
 
 def send(command_type, params=None, timeout=120):
@@ -204,6 +211,24 @@ def count_overlaps(placed, objects, pad=0.0):
     return hits
 
 
+def place_settings(members, objects, placed, top):
+    """Stack members top-down; each heading opens a new column. Returns the bottom."""
+    x, y, col_top, width, bottom = MARGIN_X, top, top, 0, top
+    in_column = False  # items before the first heading form a top row
+    for node in members:
+        if (objects[node]["nickname"] or "").startswith(HEADING):
+            if in_column:
+                x += width + GUTTER_X
+            else:
+                col_top, in_column = y, True
+            y, width = col_top, 0
+        placed[node] = [x, y]
+        y += objects[node]["height"] + GUTTER_Y
+        width = max(width, objects[node]["width"])
+        bottom = max(bottom, y)
+    return bottom
+
+
 def read_flag(name, default):
     """--gutter-x=40 style overrides, so spacing is tunable without editing code."""
     for arg in sys.argv:
@@ -327,8 +352,17 @@ def align_only(dry_run):
     print(f"moved: {send('set_component_position', {'items': items})['moved']}")
 
 
+FLAGS = {"--align-only", "--check", "--compact", "--dry-run", "--fix-overlaps",
+         "--no-align", "--no-band-compact", "--panels"}
+
+
 def main():
     global GUTTER_X, GUTTER_Y, BAND_GAP
+    # An unknown flag (e.g. --help) must not fall through to a full re-layout.
+    unknown = [a for a in sys.argv[1:] if a not in FLAGS
+               and not a.startswith(("--band-gap=", "--gutter-x=", "--gutter-y="))]
+    if unknown:
+        sys.exit(f"Unknown option {unknown}. Nothing moved.\n{__doc__}")
     dry_run = "--dry-run" in sys.argv
     panels_only = "--panels" in sys.argv
     if "--compact" in sys.argv:
@@ -351,8 +385,8 @@ def main():
     # Panels first — sizing is independent of position.
     resized = 0
     for obj in layout["objects"]:
-        if obj["type"] != "GH_Panel":
-            continue
+        if obj["type"] != "GH_Panel" or (obj["nickname"] or "").startswith("NOTE"):
+            continue  # NOTE panels keep their size — readers drag them open
         info = send("get_component_info", {"id": obj["id"]})
         text = str(info.get("value") or "")
         width, height = PANEL_LARGE if len(text) > LARGE_PANEL_MIN_CHARS else PANEL_SMALL
@@ -368,10 +402,33 @@ def main():
         objects = {o["id"]: o for o in layout["objects"]}
 
     connections = send("get_connections")
-    incoming, outgoing = build_graph(layout, connections)
+    settings = next((g["members"] for g in layout["groups"] if g["name"] == SETTINGS), [])
+    incoming, outgoing = build_graph(layout, {"connections": [
+        c for c in connections["connections"] if c["sourceId"] not in settings]})
 
     ids = list(objects)
     column_of = assign_columns(ids, incoming, outgoing)
+
+    # ponytail: NOTE panels have no wires and would land in column 0, dragging their
+    # whole group band to the left edge. Pin them to their group's first column.
+    notes = {n for n in ids if (objects[n]["nickname"] or "").startswith("NOTE")}
+    for group in layout["groups"]:
+        cols = [column_of[m] for m in group["members"] if m in column_of and m not in notes]
+        for member in group["members"]:
+            if member in notes and cols:
+                column_of[member] = min(cols)
+
+    # "← name (group)" relays are the group's inputs: one column left of the group's
+    # first column, so every group reads as a closed block with its inputs on the left.
+    relays = {n for n in ids if (objects[n]["nickname"] or "").startswith(RELAY)}
+    for group in layout["groups"]:
+        if group["name"] == SETTINGS:
+            continue
+        cols = [column_of[m] for m in group["members"]
+                if m in column_of and m not in notes and m not in relays]
+        for member in group["members"]:
+            if member in relays and cols:
+                column_of[member] = min(cols) - 1
 
     columns = {}
     for node in ids:
@@ -382,6 +439,8 @@ def main():
         for rank, node in enumerate(sorted(columns[col])):
             row_of[node] = rank
     columns = order_rows(columns, incoming, row_of)
+    for node in notes:
+        row_of[node] = -1  # top of its cell
 
     # Each group gets its own horizontal band, at the same height in every column,
     # so the didactic blocks read as clean stripes instead of ragged clusters.
@@ -457,6 +516,9 @@ def main():
     for group in groups_in_order:
         band_y[group] = cursor_y
         band_bottom = cursor_y
+        if group == SETTINGS:
+            cursor_y = place_settings(settings, objects, placed, cursor_y) + BAND_GAP
+            continue
         for col in sorted({c for g, c in cells if g == group}, reverse=True):
             nodes = cells[(group, col)]
             provisional = {}
@@ -466,7 +528,7 @@ def main():
                 y += objects[node]["height"] + GUTTER_Y
             entries = sorted(
                 ((wanted_y(n, group, placed), provisional[n], n) for n in nodes),
-                key=lambda e: e[1] if e[0] is None else e[0])
+                key=lambda e: (e[2] not in notes, e[1] if e[0] is None else e[0]))
             floor = cursor_y
             for wanted, fallback, node in entries:
                 top = max(wanted if wanted is not None else fallback, floor)

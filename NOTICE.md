@@ -26,16 +26,12 @@ Changed in this fork:
   `search_components`, `delete_component`, `disconnect_components`, `create_group`,
   `set_component_position`, `set_component_size`, `set_nickname`, `set_slider`,
   `set_param_value`, `set_value_list`, `set_preview`, `set_colour`, `set_script`,
-  `add_variable_parameter`.
+  `add_variable_parameter`, `add_to_group`, `remove_from_group`, `set_wire_display`,
+  `set_enabled`, `recompute`, `bake_component`.
+- Added an MCP server (`server/gh_mcp_server.py`) that replaces the upstream Python bridge and
+  exposes every document command as a tool.
 
 ## Dependencies not included
 
 - **Rhino / Grasshopper** (McNeel) — commercial, required to build and run.
-- **[Robot Components](https://github.com/RobotComponents/RobotComponents)** (GPL v3) — used
-  by the documented robotics workflow. Not redistributed. Install from Food4Rhino or GitHub.
 - **Newtonsoft.Json** — referenced by the bridge, ships with Grasshopper.
-
-## Not included on purpose
-
-The course material this was built for (lesson plans, cell data, contact details, student
-project documents) is deliberately absent. This repository contains only the tooling.

@@ -472,6 +472,14 @@ namespace GrasshopperMCP.Commands
                             throw new ArgumentException("Invalid slider value format");
                         }
                     }
+                    else if (component is GH_BooleanToggle toggle)
+                    {
+                        if (!bool.TryParse(value, out bool boolValue))
+                        {
+                            throw new ArgumentException("Toggle value must be true or false");
+                        }
+                        toggle.Value = boolValue;
+                    }
                     else if (component is IGH_Component ghComponent)
                     {
                         // 嘗試設置第一個輸入參數的值

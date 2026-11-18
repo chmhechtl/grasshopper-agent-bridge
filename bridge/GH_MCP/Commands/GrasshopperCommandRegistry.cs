@@ -76,6 +76,12 @@ namespace GH_MCP.Commands
 
             // Harness v3 (Session 2026-08-07, abends)
             RegisterCommand("create_group", InspectionCommandHandler.CreateGroup);
+            RegisterCommand("add_to_group", InspectionCommandHandler.AddToGroup);
+            RegisterCommand("remove_from_group", InspectionCommandHandler.RemoveFromGroup);
+            RegisterCommand("set_wire_display", InspectionCommandHandler.SetWireDisplay);
+            RegisterCommand("recompute", InspectionCommandHandler.Recompute);
+            RegisterCommand("set_enabled", InspectionCommandHandler.SetEnabled);
+            RegisterCommand("bake_component", InspectionCommandHandler.BakeComponent);
             RegisterCommand("disconnect_components", InspectionCommandHandler.DisconnectComponents);
             RegisterCommand("set_value_list", InspectionCommandHandler.SetValueList);
             RegisterCommand("get_component_output", InspectionCommandHandler.GetComponentOutput);

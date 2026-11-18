@@ -59,6 +59,37 @@ The release archive also contains `Newtonsoft.Json.dll`. Copy it into the same f
 Grasshopper reports that assembly as missing — Rhino ships its own copy, and adding a second one
 where it is not needed can collide with other plugins.
 
+## Connect an MCP client
+
+The MCP server is one Python file, `server/gh_mcp_server.py`. It needs Python 3.10+ and the
+`mcp` package; with [uv](https://docs.astral.sh/uv/) the dependency is resolved from the file
+itself.
+
+**Claude Code, as a plugin** (MCP server plus skills):
+
+```
+/plugin marketplace add chmhechtl/grasshopper-agent-bridge
+/plugin install grasshopper-agent-bridge@grasshopper-agent-bridge
+```
+
+**Any MCP client**, from a clone of this repository:
+
+```bash
+claude mcp add grasshopper -- uv run /path/to/grasshopper-agent-bridge/server/gh_mcp_server.py
+```
+
+or in a JSON config:
+
+```json
+{"mcpServers": {"grasshopper": {"command": "uv", "args": ["run", "/path/to/server/gh_mcp_server.py"]}}}
+```
+
+Without uv: `pip install 'mcp<2'`, then use `python3` as the command (the server is written
+against version 1 of the SDK). `GH_BRIDGE_HOST`,
+`GH_BRIDGE_PORT` and `GH_BRIDGE_TIMEOUT` override the defaults (`127.0.0.1`, `8080`, 120 s).
+
+Then run `/onboarding-grasshopper-bridge` for a guided tour.
+
 ## Run
 
 1. **Restart Rhino.** .NET Framework cannot unload an assembly, so a replaced `.gha` is only
